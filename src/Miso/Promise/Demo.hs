@@ -13,12 +13,12 @@ storeName = "blobs"
 openDb :: IO IDB.Database
 openDb = runPromiseT do
   f <- IDB.factory
-  req <- IDB.open f "blob" (Just 1)
-  upgraded <- IDB.onUpgradeNeeded upgradeStore req
-  blocked <- IDB.onBlocked (\_ -> pure ()) upgraded
-  success <- IDB.onSuccess blocked
-  done <- IDB.onError success
-  IDB.result done
+  IDB.result
+    =<< IDB.onError
+    =<< IDB.onSuccess
+    =<< IDB.onBlocked (\_ -> pure ())
+    =<< IDB.onUpgradeNeeded upgradeStore
+    =<< IDB.open f "blob" (Just 1)
 
 upgradeStore :: PromiseM m => IDB.Database -> m ()
 upgradeStore db = do
@@ -34,8 +34,8 @@ remove store key = withDatabase \db -> do
   tx <- IDB.transaction db [storeName] IDB.ReadWrite
   os <- IDB.objectStore tx storeName
   void $ IDB.delete os [store, key]
-  tx' <- IDB.transactionAwait tx
-  complete <- IDB.onTransactionComplete (pure ()) tx'
-  failed <- IDB.onTransactionError (\_ -> pure ()) complete
-  aborted <- IDB.onTransactionAbort (\_ -> pure ()) failed
-  IDB.awaitTransaction aborted
+  IDB.awaitTransaction
+    =<< IDB.onTransactionAbort (\_ -> pure ())
+    =<< IDB.onTransactionError (\_ -> pure ())
+    =<< IDB.onTransactionComplete (pure ())
+    =<< IDB.transactionAwait tx
