@@ -43,18 +43,17 @@ module Miso.IndexDb
   , hasObjectStore
   , createObjectStore
   , deleteObjectStore
-  , transaction
   , close
   , dbName
   , dbVersion
     -- * Transaction
+  , withTransaction
   , Miso.IndexDb.objectStore
   , abort
   , commit
     -- * Transaction completion
   , TransactionCallbacks
   , TransactionAwait
-  , transactionAwait
   , onTransactionComplete
   , onTransactionError
   , onTransactionAbort
@@ -180,9 +179,6 @@ onBlocked cb req@(Typed _ _) =
 newtype Factory = Factory JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
 
-newtype Database = Database JSVal
-  deriving newtype (FromJSVal, ToObject, ToJSVal)
-
 data StoreOptions = StoreOptions
   { storeKeyPath :: Maybe MisoString
   , storeAutoIncrement :: Bool
@@ -231,10 +227,6 @@ createObjectStore (Database db) name opts =
 deleteObjectStore :: MonadIO m => Database -> MisoString -> m ()
 deleteObjectStore (Database db) name = void $ db # "deleteObjectStore" $ name
 
-transaction :: MonadIO m => Database -> [MisoString] -> TxMode -> m Transaction
-transaction (Database db) names mode =
-  Transaction <$> (db # "transaction" $ (names, mode))
-
 close :: MonadIO m => Database -> m ()
 close (Database db) = void $ db # "close" $ ()
 
@@ -244,8 +236,11 @@ dbName (Database db) = fromJSValUnchecked =<< (db ! "name")
 dbVersion :: MonadIO m => Database -> m Int
 dbVersion (Database db) = fromJSValUnchecked =<< (db ! "version")
 
-objectStore :: MonadIO m => Transaction -> MisoString -> m ObjectStore
-objectStore (Transaction tx) name = ObjectStore <$> (tx # "objectStore" $ name)
+objectStore :: MonadIO m =>
+  TransactionAwait s pending ->
+  MisoString ->
+  m ObjectStore
+objectStore (Typed raw _) name = ObjectStore <$> (raw # "objectStore" $ name)
 
 put :: (PromiseM m, ToJSVal k, ToJSVal v)
     => ObjectStore -> v -> Maybe k -> m (Request RequestCallbacks JSVal)

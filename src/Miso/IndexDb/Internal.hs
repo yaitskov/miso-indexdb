@@ -19,6 +19,7 @@ module Miso.IndexDb.Internal
   , mkRequest
   , resolveReq
   , rejectReq
+  , Database(..)
   , ObjectStore(..)
   ) where
 
@@ -100,6 +101,9 @@ newtype DbError = DbError JSVal
 
 unDbError :: DbError -> JSVal
 unDbError (DbError v) = v
+
+newtype Database = Database JSVal
+  deriving newtype (FromJSVal, ToObject, ToJSVal)
 
 newtype ObjectStore = ObjectStore JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)

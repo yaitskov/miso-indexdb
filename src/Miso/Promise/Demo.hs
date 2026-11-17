@@ -30,12 +30,11 @@ withDatabase :: (IDB.Database -> PromiseT IO a) -> IO a
 withDatabase f = bracket openDb IDB.close (runPromiseT . f)
 
 remove :: MisoString -> MisoString -> IO ()
-remove store key = withDatabase \db -> do
-  tx <- IDB.transaction db [storeName] IDB.ReadWrite
-  os <- IDB.objectStore tx storeName
-  void $ IDB.delete os [store, key]
-  IDB.awaitTransaction
-    =<< IDB.onTransactionAbort (\_ -> pure ())
-    =<< IDB.onTransactionError (\_ -> pure ())
-    =<< IDB.onTransactionComplete (pure ())
-    =<< IDB.transactionAwait tx
+remove store key = withDatabase \db ->
+  IDB.withTransaction db [storeName] IDB.ReadWrite \tx -> do
+    os <- IDB.objectStore tx storeName
+    void $ IDB.delete os [store, key]
+    IDB.onTransactionAbort (\_ -> pure ())
+      =<< IDB.onTransactionError (\_ -> pure ())
+      =<< IDB.onTransactionComplete (pure ())
+      =<< pure tx
