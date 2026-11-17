@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 module UnliftIO.Miso
-  ( liftF
+  ( module Miso
+  , liftF
   , liftF2
   , (#)
   , (!)
@@ -11,7 +12,7 @@ module UnliftIO.Miso
   , fromJSValUnchecked
   ) where
 
-import Miso hiding (tell, (#), (!), jsg, setField, fromJSValUnchecked, new, apply, await)
+import Miso hiding ((#), (!), jsg, setField, fromJSValUnchecked, new, apply, await)
 import Miso qualified as M
 import Miso.DSL qualified as MDSL
 import Control.Monad.IO.Class

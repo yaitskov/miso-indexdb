@@ -1,9 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 module Miso.Promise.Demo (openDb) where
 
-import Miso (Function(..), JSVal, MisoString)
 import Control.Monad (void, when)
-import Control.Monad.IO.Class (liftIO)
 import Miso.Promise
 import Prelude
 
