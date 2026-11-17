@@ -32,26 +32,38 @@ instance ToJSVal Direction where
   toJSVal NextUnique = toJSVal ("nextunique" :: MisoString)
   toJSVal PreviousUnique = toJSVal ("prevunique" :: MisoString)
 
-openCursor :: (PromiseM m, ToJSVal q)
-           => ObjectStore -> Maybe q -> Maybe Direction -> m (Request RequestCallbacks (Maybe Cursor))
+openCursor :: (PromiseM m, ToJSVal q) =>
+  ObjectStore ->
+  Maybe q ->
+  Maybe Direction ->
+  m (Request RequestCallbacks (Maybe Cursor))
 openCursor (ObjectStore os) q dir = do
   raw <- os # "openCursor" $ (q, dir)
   mkRequest raw
 
-openKeyCursor :: (PromiseM m, ToJSVal q)
-              => ObjectStore -> Maybe q -> Maybe Direction -> m (Request RequestCallbacks (Maybe Cursor))
+openKeyCursor :: (PromiseM m, ToJSVal q) =>
+  ObjectStore ->
+  Maybe q ->
+  Maybe Direction ->
+  m (Request RequestCallbacks (Maybe Cursor))
 openKeyCursor (ObjectStore os) q dir = do
   raw <- os # "openKeyCursor" $ (q, dir)
   mkRequest raw
 
-indexOpenCursor :: (PromiseM m, ToJSVal q)
-                => Index -> Maybe q -> Maybe Direction -> m (Request RequestCallbacks (Maybe Cursor))
+indexOpenCursor :: (PromiseM m, ToJSVal q) =>
+  Index ->
+  Maybe q ->
+  Maybe Direction ->
+  m (Request RequestCallbacks (Maybe Cursor))
 indexOpenCursor (Index ix) q dir = do
   raw <- ix # "openCursor" $ (q, dir)
   mkRequest raw
 
-indexOpenKeyCursor :: (PromiseM m, ToJSVal q)
-                   => Index -> Maybe q -> Maybe Direction -> m (Request RequestCallbacks (Maybe Cursor))
+indexOpenKeyCursor :: (PromiseM m, ToJSVal q) =>
+  Index ->
+  Maybe q ->
+  Maybe Direction ->
+  m (Request RequestCallbacks (Maybe Cursor))
 indexOpenKeyCursor (Index ix) q dir = do
   raw <- ix # "openKeyCursor" $ (q, dir)
   mkRequest raw
@@ -80,7 +92,10 @@ deleteCursor (Cursor c) = do
   raw <- c # "delete" $ ()
   mkRequest raw
 
-updateCursor :: (PromiseM m, ToArgs v) => Cursor -> v -> m (Request RequestCallbacks JSVal)
+updateCursor :: (PromiseM m, ToArgs v) =>
+  Cursor ->
+  v ->
+  m (Request RequestCallbacks JSVal)
 updateCursor (Cursor c) v = do
   raw <- c # "update" $ v
   mkRequest raw
