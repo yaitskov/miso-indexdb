@@ -26,27 +26,23 @@ function openDatabase() {
 
 ### Haskell typed analog
 ``` haskell
-openDb :: IO JSVal
-openDb = do
-  db' <- runPromiseT $ do
-    p <- newPromise (\resolve reject -> do
-      indexDb <- jsg "indexDb"
-      r <- indexDb # "open" $ ("blob" :: MisoString, 1 :: Int)
-      setField r "onupgradeneeded" =<< mkAsyncCallback do
-        db <- r ! "result"
-        collectNames <- liftIO $ db ! "objectStoreNames"
-        let storeName = "blobs" :: MisoString
-        hasBlobsCollection :: Bool <- fromJSValUnchecked =<<
-          (collectNames # "contains" $ (storeName))
-        when hasBlobsCollection do
-          void $ db # "createObjectStore" $ (storeName)
-      setField r "onsuccess" =<< mkAsyncCallback do
-        void $ (Function resolve `apply`) =<< r ! "result"
-      setField r "onerror" =<< mkAsyncCallback do
-        void $ (Function reject `apply`) =<< r ! "error"
-      )
-    await p
-  pure db'
+import Miso.IndexDb qualified as IDB
+
+openDb :: IO IDB.Database
+openDb = runPromiseT do
+  f <- IDB.factory
+  req <- IDB.open f "blob" (Just 1)
+  upgraded <- IDB.onUpgradeNeeded upgradeStore req
+  blocked <- IDB.onBlocked (\_ -> pure ()) upgraded
+  success <- IDB.onSuccess blocked
+  done <- IDB.onError success
+  IDB.result done
+
+upgradeStore :: PromiseM m => IDB.Database -> m ()
+upgradeStore db = do
+  storeExists <- IDB.hasObjectStore db "blobs"
+  unless storeExists do
+    void $ IDB.createObjectStore db "blobs" (IDB.StoreOptions Nothing True)
 ```
 
 ## Development environment

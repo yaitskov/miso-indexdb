@@ -40,6 +40,7 @@ module Miso.IndexDb
   , cmp
     -- * Database
   , objectStoreNames
+  , hasObjectStore
   , createObjectStore
   , deleteObjectStore
   , transaction
@@ -261,6 +262,11 @@ cmp (Factory f) a b = fromJSValUnchecked =<< (f # "cmp" $ (a, b))
 
 objectStoreNames :: PromiseM m => Database -> m [MisoString]
 objectStoreNames (Database db) = fromJSValUnchecked =<< (db ! "objectStoreNames")
+
+hasObjectStore :: PromiseM m => Database -> MisoString -> m Bool
+hasObjectStore (Database db) name = do
+  names <- db ! "objectStoreNames"
+  fromJSValUnchecked =<< (names # "contains" $ name)
 
 createObjectStore :: MonadIO m => Database -> MisoString -> StoreOptions -> m ObjectStore
 createObjectStore (Database db) name opts =
