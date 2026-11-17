@@ -101,39 +101,13 @@ module Miso.IndexDb
   , errorMessage
   ) where
 
+import Miso.IndexDb.Cursor
 import Miso.IndexDb.Internal
 import Miso.IndexDb.Tx
 import Miso.Promise hiding (get, put, errorMessage)
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
-import GHC.TypeLits (Symbol)
-import UnliftIO (newEmptyMVar, putMVar, readMVar)
 import Prelude
-
-data RequestCore a = RequestCore Promise JSVal JSVal
-
-type Request (pending :: [Symbol]) a = Typed pending (RequestCore a)
-
-type RequestCallbacks = '["onsuccess", "onerror"]
-
-type OpenCallbacks = '["onupgradeneeded", "onblocked", "onsuccess", "onerror"]
-
-type DeleteCallbacks = '["onblocked", "onsuccess", "onerror"]
-
-mkRequest :: PromiseM m => JSVal -> m (Request pending a)
-mkRequest raw = do
-  resMv <- newEmptyMVar
-  rejMv <- newEmptyMVar
-  p <- newPromise $ \res rej -> putMVar resMv res >> putMVar rejMv rej
-  res <- readMVar resMv
-  rej <- readMVar rejMv
-  pure $ Typed raw (RequestCore p res rej)
-
-resolveReq :: PromiseM m => RequestCore a -> JSVal -> m ()
-resolveReq (RequestCore _ _ res) v = void $ apply (Function res) v
-
-rejectReq :: PromiseM m => RequestCore a -> JSVal -> m ()
-rejectReq (RequestCore _ _ rej) v = void $ apply (Function rej) v
 
 result :: (PromiseM m, FromJSVal a) => Request '[] a -> m a
 result (Typed _ (RequestCore p _ _)) = fromJSValUnchecked =<< await p
@@ -207,15 +181,6 @@ newtype Factory = Factory JSVal
 newtype Database = Database JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
 
-newtype ObjectStore = ObjectStore JSVal
-  deriving newtype (FromJSVal, ToObject, ToJSVal)
-
-newtype Index = Index JSVal
-  deriving newtype (FromJSVal, ToObject, ToJSVal)
-
-newtype Cursor = Cursor JSVal
-  deriving newtype (FromJSVal, ToObject, ToJSVal)
-
 newtype KeyRange = KeyRange JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
 
@@ -230,14 +195,6 @@ instance ToJSVal StoreOptions where
     setProp "keyPath" kp o
     setProp "autoIncrement" ai o
     toJSVal o
-
-data Direction = Next | Previous | NextUnique | PreviousUnique
-
-instance ToJSVal Direction where
-  toJSVal Next = toJSVal ("next" :: MisoString)
-  toJSVal Previous = toJSVal ("prev" :: MisoString)
-  toJSVal NextUnique = toJSVal ("nextunique" :: MisoString)
-  toJSVal PreviousUnique = toJSVal ("prevunique" :: MisoString)
 
 factory :: PromiseM m => m Factory
 factory = Factory <$> jsg "indexedDB"
@@ -350,18 +307,6 @@ deleteIndex (ObjectStore os) name = void $ os # "deleteIndex" $ name
 index :: MonadIO m => ObjectStore -> MisoString -> m Index
 index (ObjectStore os) name = Index <$> (os # "index" $ name)
 
-openCursor :: (PromiseM m, ToJSVal q)
-           => ObjectStore -> Maybe q -> Maybe Direction -> m (Request RequestCallbacks (Maybe Cursor))
-openCursor (ObjectStore os) q dir = do
-  raw <- os # "openCursor" $ (q, dir)
-  mkRequest raw
-
-openKeyCursor :: (PromiseM m, ToJSVal q)
-              => ObjectStore -> Maybe q -> Maybe Direction -> m (Request RequestCallbacks (Maybe Cursor))
-openKeyCursor (ObjectStore os) q dir = do
-  raw <- os # "openKeyCursor" $ (q, dir)
-  mkRequest raw
-
 indexGet :: forall a k m. (PromiseM m, ToArgs k, FromJSVal a)
          => Index -> k -> m (Request RequestCallbacks a)
 indexGet (Index ix) k = do
@@ -387,47 +332,6 @@ indexGetAllKeys (Index ix) q = do
 indexCount :: (PromiseM m, ToArgs q) => Index -> Maybe q -> m (Request RequestCallbacks Int)
 indexCount (Index ix) q = do
   raw <- ix # "count" $ q
-  mkRequest raw
-
-indexOpenCursor :: (PromiseM m, ToJSVal q)
-                => Index -> Maybe q -> Maybe Direction -> m (Request RequestCallbacks (Maybe Cursor))
-indexOpenCursor (Index ix) q dir = do
-  raw <- ix # "openCursor" $ (q, dir)
-  mkRequest raw
-
-indexOpenKeyCursor :: (PromiseM m, ToJSVal q)
-                   => Index -> Maybe q -> Maybe Direction -> m (Request RequestCallbacks (Maybe Cursor))
-indexOpenKeyCursor (Index ix) q dir = do
-  raw <- ix # "openKeyCursor" $ (q, dir)
-  mkRequest raw
-
-cursorKey :: (MonadIO m, FromJSVal a) => Cursor -> m a
-cursorKey (Cursor c) = fromJSValUnchecked =<< (c ! "key")
-
-cursorPrimaryKey :: (MonadIO m, FromJSVal a) => Cursor -> m a
-cursorPrimaryKey (Cursor c) = fromJSValUnchecked =<< (c ! "primaryKey")
-
-cursorValue :: (MonadIO m, FromJSVal a) => Cursor -> m a
-cursorValue (Cursor c) = fromJSValUnchecked =<< (c ! "value")
-
-advance :: MonadIO m => Cursor -> Int -> m ()
-advance (Cursor c) n = void $ c # "advance" $ n
-
-continueCursor :: (MonadIO m, ToArgs k) => Cursor -> Maybe k -> m ()
-continueCursor (Cursor c) mk = void $ c # "continue" $ mk
-
-continuePrimaryKey :: (MonadIO m, ToJSVal k, ToJSVal pk)
-                   => Cursor -> k -> pk -> m ()
-continuePrimaryKey (Cursor c) k pk = void $ c # "continuePrimaryKey" $ (k, pk)
-
-deleteCursor :: PromiseM m => Cursor -> m (Request RequestCallbacks ())
-deleteCursor (Cursor c) = do
-  raw <- c # "delete" $ ()
-  mkRequest raw
-
-updateCursor :: (PromiseM m, ToArgs v) => Cursor -> v -> m (Request RequestCallbacks JSVal)
-updateCursor (Cursor c) v = do
-  raw <- c # "update" $ v
   mkRequest raw
 
 keyRangeClass :: MonadIO m => m JSVal

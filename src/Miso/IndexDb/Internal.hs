@@ -17,13 +17,25 @@ module Miso.IndexDb.Internal
   , eventError
   , DbError(..)
   , unDbError
+  , RequestCore(..)
+  , Request
+  , RequestCallbacks
+  , OpenCallbacks
+  , DeleteCallbacks
+  , mkRequest
+  , resolveReq
+  , rejectReq
+  , ObjectStore(..)
+  , Index(..)
   ) where
 
 import Miso.Promise
+import Control.Monad (void)
 import Data.Coerce (coerce)
 import Data.Proxy (Proxy(..))
 import Data.Type.Equality (type (==))
 import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
+import UnliftIO (newEmptyMVar, putMVar, readMVar)
 import Prelude
 
 type family Drop (name :: Symbol) (xs :: [Symbol]) :: [Symbol] where
@@ -55,6 +67,31 @@ setCallback (Typed raw a) f = do
   setField raw (ms $ symbolVal @name Proxy) =<< mkAsyncCallback1 f
   pure $ coerce (Typed raw a :: Typed pending a)
 
+data RequestCore a = RequestCore Promise JSVal JSVal
+
+type Request (pending :: [Symbol]) a = Typed pending (RequestCore a)
+
+type RequestCallbacks = '["onsuccess", "onerror"]
+
+type OpenCallbacks = '["onupgradeneeded", "onblocked", "onsuccess", "onerror"]
+
+type DeleteCallbacks = '["onblocked", "onsuccess", "onerror"]
+
+mkRequest :: PromiseM m => JSVal -> m (Request pending a)
+mkRequest raw = do
+  resMv <- newEmptyMVar
+  rejMv <- newEmptyMVar
+  p <- newPromise $ \res rej -> putMVar resMv res >> putMVar rejMv rej
+  res <- readMVar resMv
+  rej <- readMVar rejMv
+  pure $ Typed raw (RequestCore p res rej)
+
+resolveReq :: PromiseM m => RequestCore a -> JSVal -> m ()
+resolveReq (RequestCore _ _ res) v = void $ apply (Function res) v
+
+rejectReq :: PromiseM m => RequestCore a -> JSVal -> m ()
+rejectReq (RequestCore _ _ rej) v = void $ apply (Function rej) v
+
 eventResult :: PromiseM m => JSVal -> m JSVal
 eventResult ev = do
   target <- ev ! "target"
@@ -70,3 +107,9 @@ newtype DbError = DbError JSVal
 
 unDbError :: DbError -> JSVal
 unDbError (DbError v) = v
+
+newtype ObjectStore = ObjectStore JSVal
+  deriving newtype (FromJSVal, ToObject, ToJSVal)
+
+newtype Index = Index JSVal
+  deriving newtype (FromJSVal, ToObject, ToJSVal)
