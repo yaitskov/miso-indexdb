@@ -40,6 +40,7 @@ library
   hs-source-dirs: src
   exposed-modules:
     Miso.Promise
+    Miso.Promise.Demo
     UnliftIO.Miso
   build-depends:
     , miso               >= 1.15
