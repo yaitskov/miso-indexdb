@@ -17,14 +17,8 @@ module Miso.IndexDb.Tx
 
 import Miso.IndexDb.Internal
 import Miso.Promise
+import Miso.IndexDb.Prelude
 import Control.Monad (void)
-import Control.Monad.IO.Class (MonadIO)
-import Data.Kind (Type)
-
-import UnliftIO (newEmptyMVar, finally, putMVar, readMVar, MVar)
-import Prelude
-import Data.Proxy (Proxy (Proxy))
-import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
 import GHC.Generics
 
 

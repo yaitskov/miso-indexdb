@@ -15,17 +15,20 @@ module Miso.IndexDb.Index
 import Miso.IndexDb.Internal
 import Miso.IndexDb.ObjectStore
 import Miso.Promise
+import Miso.IndexDb.Prelude
 import Control.Monad (void)
-import Control.Monad.IO.Class (MonadIO)
-import Prelude
-import Data.Kind (Type)
 
 newtype Index (ts :: Maybe (s :: Type)) = Index JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
 type MetaIndex = Index (Nothing :: Maybe ())
 type DataIndex s = Index (Just s)
 
-createIndex :: MonadIO m => MetaObjectStore -> MisoString -> MisoString -> m MetaIndex
+createIndex ::
+  MonadIO m =>
+  MetaObjectStore ->
+  MisoString ->
+  MisoString ->
+  m MetaIndex
 createIndex (ObjectStore os) name keyPath =
   Index <$> (os # "createIndex" $ (name, keyPath))
 
@@ -49,8 +52,14 @@ indexGetKey (Index ix) k = do
   raw <- ix # "getKey" $ k
   mkRequest raw
 
-indexGetAll :: forall a q m s. (PromiseM m, ToJSVal q, FromJSVal a)
-            => DataIndex s -> Maybe q -> Maybe Int -> m (Request RequestCallbacks [a])
+indexGetAll ::
+  forall a q m s.
+  (PromiseM m, ToJSVal q, FromJSVal a) =>
+  DataIndex s ->
+  Maybe q ->
+  Maybe Int ->
+  m (Request RequestCallbacks [a])
+
 indexGetAll (Index ix) q cnt = do
   raw <- ix # "getAll" $ (q, cnt)
   mkRequest raw

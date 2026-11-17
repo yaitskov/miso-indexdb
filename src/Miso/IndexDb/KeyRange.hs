@@ -7,8 +7,7 @@ module Miso.IndexDb.KeyRange
   ) where
 
 import Miso.Promise
-import Control.Monad.IO.Class (MonadIO)
-import Prelude
+import Miso.IndexDb.Prelude
 
 newtype KeyRange = KeyRange JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)

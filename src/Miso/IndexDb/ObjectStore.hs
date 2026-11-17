@@ -20,16 +20,10 @@ module Miso.IndexDb.ObjectStore
 import Miso.IndexDb.Internal
 import Miso.IndexDb.Tx
 import Miso.Promise hiding (get, put, errorMessage)
+import Miso.IndexDb.Prelude
 import Control.Monad (void)
-import Control.Monad.IO.Class (MonadIO)
-import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
-import Prelude
-import Control.Concurrent ( MVar)
-import Data.Proxy
-import UnliftIO (throwIO, putMVar, Exception(..), newEmptyMVar, readMVar)
 import Miso.JSON (jsonStringify)
 import System.IO.Unsafe (unsafePerformIO)
-import Data.Kind (Type)
 
 newtype DbReq (pending :: [Symbol]) r = DbReq { unDbReq :: JSVal }
 type NewDbReq r = DbReq RequestCallbacks r

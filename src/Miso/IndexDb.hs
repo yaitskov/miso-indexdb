@@ -107,8 +107,7 @@ import Miso.IndexDb.ObjectStore
 import Miso.IndexDb.Tx
 import Miso.Promise hiding (get, put, errorMessage)
 import Control.Monad (void)
-import Control.Monad.IO.Class (MonadIO)
-import Prelude
+import Miso.IndexDb.Prelude
 
 result :: (PromiseM m, FromJSVal a) => Request '[] a -> m a
 result (Typed _ (RequestCore p _ _)) = fromJSValUnchecked =<< await p
@@ -182,12 +181,21 @@ newtype Factory = Factory JSVal
 factory :: PromiseM m => m Factory
 factory = Factory <$> jsg "indexedDB"
 
-open :: PromiseM m => Factory -> MisoString -> Maybe Int -> m (Request OpenCallbacks Database)
+open ::
+  PromiseM m =>
+  Factory ->
+  MisoString ->
+  Maybe Int ->
+  m (Request OpenCallbacks Database)
 open (Factory f) name ver = do
   raw <- f # "open" $ (name, ver)
   mkRequest raw
 
-deleteDatabase :: PromiseM m => Factory -> MisoString -> m (Request DeleteCallbacks ())
+deleteDatabase ::
+  PromiseM m =>
+  Factory ->
+  MisoString ->
+  m (Request DeleteCallbacks ())
 deleteDatabase (Factory f) name = do
   raw <- f # "deleteDatabase" $ name
   mkRequest raw

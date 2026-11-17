@@ -104,6 +104,7 @@ library
     UnliftIO.Miso
   other-modules:
     Miso.IndexDb.Internal
+    Miso.IndexDb.Prelude
   build-depends:
     , miso               >= 1.15
     , mtl                < 3

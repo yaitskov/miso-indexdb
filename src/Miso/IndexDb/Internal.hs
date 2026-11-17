@@ -25,19 +25,21 @@ module Miso.IndexDb.Internal
   ) where
 
 import Miso.Promise
+import Miso.IndexDb.Prelude
 import Control.Monad (void)
 import Data.Coerce (coerce)
-import Data.Proxy (Proxy(..))
 import Data.Type.Equality (type (==))
-import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
-import UnliftIO (newEmptyMVar, putMVar, readMVar)
-import Prelude
 
 type family Drop (name :: Symbol) (xs :: [Symbol]) :: [Symbol] where
   Drop n '[]       = '[]
   Drop n (x ': xs) = DropStep (n == x) n x xs
 
-type family DropStep (same :: Bool) (n :: Symbol) (x :: Symbol) (xs :: [Symbol]) :: [Symbol] where
+type family DropStep
+  (same :: Bool)
+  (n :: Symbol)
+  (x :: Symbol)
+  (xs :: [Symbol]) ::
+  [Symbol] where
   DropStep 'True  n x xs = Drop n xs
   DropStep 'False n x xs = x ': Drop n xs
 
