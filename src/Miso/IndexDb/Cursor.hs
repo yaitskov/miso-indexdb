@@ -17,6 +17,7 @@ module Miso.IndexDb.Cursor
 
 import Miso.IndexDb.Index
 import Miso.IndexDb.Internal
+import Miso.IndexDb.ObjectStore
 import Miso.Promise
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
