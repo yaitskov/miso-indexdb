@@ -96,6 +96,7 @@ library
   import: base
   hs-source-dirs: src
   exposed-modules:
+    Miso.IndexDb
     Miso.Promise
     Miso.Promise.Demo
     UnliftIO.Miso
