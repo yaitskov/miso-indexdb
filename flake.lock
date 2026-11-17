@@ -1,0 +1,78 @@
+{
+  "nodes": {
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1794427683,
+        "narHash": "sha256-o7ey9gEilsxaifqJWnBDlYSKbNWYQYtKwDyXeZU2kaU=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "cd489559845d81f673a12885576016c65cbe9363",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "miso": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794622100,
+        "narHash": "sha256-29TNiY19zMfZNPN6hZX6hZD6uJgSMi4CljajCjema48=",
+        "owner": "dmjio",
+        "repo": "miso",
+        "rev": "f8d8762a2a5d6793719d7c02f6bad896eb2b7ee9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dmjio",
+        "repo": "miso",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1794825760,
+        "narHash": "sha256-wLMd2RFAPiYfhKDkeRtEKhiaqiPBoMcYgOM71ynZ7Io=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1f0e61e3688e53926a1a5aa749a9a0c487dbb559",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1f0e61e3688e53926a1a5aa749a9a0c487dbb559",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "miso": "miso",
+        "nixpkgs": "nixpkgs"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1791244623,
+        "narHash": "sha256-uuanbkFk8a313Zfrxdcz8Us/yQtaxNnKJtX8v0ZPpd8=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "d36eeed142f88b5a636f2e3856a53c61654cf29b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

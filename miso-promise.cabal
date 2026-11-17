@@ -1,0 +1,49 @@
+cabal-version: 3.0
+name:          miso-promise
+version:       0.0.1
+
+synopsis:      JS Promise support
+description:
+homepage:      http://github.com/yaitskov/miso-promise
+license:       BSD-3-Clause
+license-file:  LICENSE
+author:        Daniil Iaitskov
+maintainer:    dyaitskov@gmail.com
+copyright:     Daniil Iaitkov 2026
+category:      Miso, HTML, CSS, Template Haskell
+build-type:    Simple
+bug-reports:   https://github.com/yaitskov/miso-promise/issues
+extra-source-files:
+  test/style.css
+extra-doc-files:
+  changelog.md
+tested-with:
+  GHC == 9.12.2
+
+source-repository head
+  type:
+    git
+  location:
+    https://github.com/yaitskov/miso-promise.git
+
+common base
+  default-language: GHC2024
+  ghc-options: -Wall
+  default-extensions:
+    DefaultSignatures
+    NoImplicitPrelude
+    OverloadedRecordDot
+    OverloadedStrings
+  build-depends:
+    , base >=4.7 && < 5
+
+library
+  import: base
+  hs-source-dirs: src
+  exposed-modules:
+    Miso.Promise
+  build-depends:
+    , containers         < 1
+    , miso               >= 1.15
+    , mtl                < 3
+    , text               < 3
