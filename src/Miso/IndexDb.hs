@@ -102,7 +102,9 @@ module Miso.IndexDb
   ) where
 
 import Miso.IndexDb.Cursor
+import Miso.IndexDb.Index
 import Miso.IndexDb.Internal
+import Miso.IndexDb.KeyRange
 import Miso.IndexDb.Tx
 import Miso.Promise hiding (get, put, errorMessage)
 import Control.Monad (void)
@@ -179,9 +181,6 @@ newtype Factory = Factory JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
 
 newtype Database = Database JSVal
-  deriving newtype (FromJSVal, ToObject, ToJSVal)
-
-newtype KeyRange = KeyRange JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
 
 data StoreOptions = StoreOptions
@@ -296,67 +295,6 @@ count :: (PromiseM m, ToArgs q) => ObjectStore -> Maybe q -> m (Request RequestC
 count (ObjectStore os) q = do
   raw <- os # "count" $ q
   mkRequest raw
-
-createIndex :: MonadIO m => ObjectStore -> MisoString -> MisoString -> m Index
-createIndex (ObjectStore os) name keyPath =
-  Index <$> (os # "createIndex" $ (name, keyPath))
-
-deleteIndex :: MonadIO m => ObjectStore -> MisoString -> m ()
-deleteIndex (ObjectStore os) name = void $ os # "deleteIndex" $ name
-
-index :: MonadIO m => ObjectStore -> MisoString -> m Index
-index (ObjectStore os) name = Index <$> (os # "index" $ name)
-
-indexGet :: forall a k m. (PromiseM m, ToArgs k, FromJSVal a)
-         => Index -> k -> m (Request RequestCallbacks a)
-indexGet (Index ix) k = do
-  raw <- ix # "get" $ k
-  mkRequest raw
-
-indexGetKey :: (PromiseM m, ToArgs k) => Index -> k -> m (Request RequestCallbacks JSVal)
-indexGetKey (Index ix) k = do
-  raw <- ix # "getKey" $ k
-  mkRequest raw
-
-indexGetAll :: forall a q m. (PromiseM m, ToJSVal q, FromJSVal a)
-            => Index -> Maybe q -> Maybe Int -> m (Request RequestCallbacks [a])
-indexGetAll (Index ix) q cnt = do
-  raw <- ix # "getAll" $ (q, cnt)
-  mkRequest raw
-
-indexGetAllKeys :: (PromiseM m, ToArgs q) => Index -> Maybe q -> m (Request RequestCallbacks [JSVal])
-indexGetAllKeys (Index ix) q = do
-  raw <- ix # "getAllKeys" $ q
-  mkRequest raw
-
-indexCount :: (PromiseM m, ToArgs q) => Index -> Maybe q -> m (Request RequestCallbacks Int)
-indexCount (Index ix) q = do
-  raw <- ix # "count" $ q
-  mkRequest raw
-
-keyRangeClass :: MonadIO m => m JSVal
-keyRangeClass = jsg "IDBKeyRange"
-
-keyOnly :: (MonadIO m, ToArgs a) => a -> m KeyRange
-keyOnly v = do
-  c <- keyRangeClass
-  KeyRange <$> (c # "only" $ v)
-
-lowerBound :: (MonadIO m, ToJSVal a) => a -> Maybe Bool -> m KeyRange
-lowerBound v exclusive = do
-  c <- keyRangeClass
-  KeyRange <$> (c # "lowerBound" $ (v, exclusive))
-
-upperBound :: (MonadIO m, ToJSVal a) => a -> Maybe Bool -> m KeyRange
-upperBound v exclusive = do
-  c <- keyRangeClass
-  KeyRange <$> (c # "upperBound" $ (v, exclusive))
-
-boundRange :: (MonadIO m, ToJSVal lo, ToJSVal hi)
-           => lo -> hi -> Maybe Bool -> Maybe Bool -> m KeyRange
-boundRange lo hi loOpen hiOpen = do
-  c <- keyRangeClass
-  KeyRange <$> (c # "bound" $ (lo, hi, loOpen, hiOpen))
 
 errorName :: MonadIO m => DbError -> m MisoString
 errorName (DbError e) = fromJSValUnchecked =<< (e ! "name")

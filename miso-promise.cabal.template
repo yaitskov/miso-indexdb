@@ -42,6 +42,8 @@ library
   exposed-modules:
     Miso.IndexDb
     Miso.IndexDb.Cursor
+    Miso.IndexDb.Index
+    Miso.IndexDb.KeyRange
     Miso.IndexDb.Tx
     Miso.Promise
     Miso.Promise.Demo

@@ -20,7 +20,6 @@ module Miso.IndexDb.Internal
   , resolveReq
   , rejectReq
   , ObjectStore(..)
-  , Index(..)
   ) where
 
 import Miso.Promise
@@ -103,7 +102,4 @@ unDbError :: DbError -> JSVal
 unDbError (DbError v) = v
 
 newtype ObjectStore = ObjectStore JSVal
-  deriving newtype (FromJSVal, ToObject, ToJSVal)
-
-newtype Index = Index JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
