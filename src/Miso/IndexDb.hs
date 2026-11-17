@@ -100,33 +100,14 @@ module Miso.IndexDb
   , errorMessage
   ) where
 
+import Miso.IndexDb.Internal
+import Miso.IndexDb.Tx
 import Miso.Promise hiding (get, put, errorMessage)
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Coerce (coerce)
-import Data.Proxy (Proxy(..))
-import Data.Type.Equality (type (==))
-import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
+import GHC.TypeLits (Symbol)
 import UnliftIO (newEmptyMVar, putMVar, readMVar)
 import Prelude
-
-type family Drop (name :: Symbol) (xs :: [Symbol]) :: [Symbol] where
-  Drop n '[]       = '[]
-  Drop n (x ': xs) = DropStep (n == x) n x xs
-
-type family DropStep (same :: Bool) (n :: Symbol) (x :: Symbol) (xs :: [Symbol]) :: [Symbol] where
-  DropStep 'True  n x xs = Drop n xs
-  DropStep 'False n x xs = x ': Drop n xs
-
-type family Elem (name :: Symbol) (xs :: [Symbol]) :: Bool where
-  Elem n '[]       = 'False
-  Elem n (x ': xs) = ElemStep (n == x) n xs
-
-type family ElemStep (same :: Bool) (n :: Symbol) (xs :: [Symbol]) :: Bool where
-  ElemStep 'True  n xs = 'True
-  ElemStep 'False n xs = Elem n xs
-
-data Typed (pending :: [Symbol]) a = Typed JSVal a
 
 data RequestCore a = RequestCore Promise JSVal JSVal
 
@@ -137,17 +118,6 @@ type RequestCallbacks = '["onsuccess", "onerror"]
 type OpenCallbacks = '["onupgradeneeded", "onblocked", "onsuccess", "onerror"]
 
 type DeleteCallbacks = '["onblocked", "onsuccess", "onerror"]
-
-setCallback :: forall name pending rest a m.
-  ( PromiseM m
-  , KnownSymbol name
-  , Elem name pending ~ 'True
-  , Drop name pending ~ rest
-  )
-  => Typed pending a -> (JSVal -> m ()) -> m (Typed rest a)
-setCallback (Typed raw a) f = do
-  setField raw (ms $ symbolVal @name Proxy) =<< mkAsyncCallback1 f
-  pure $ coerce (Typed raw a :: Typed pending a)
 
 mkRequest :: PromiseM m => JSVal -> m (Request pending a)
 mkRequest raw = do
@@ -163,16 +133,6 @@ resolveReq (RequestCore _ _ res) v = void $ apply (Function res) v
 
 rejectReq :: PromiseM m => RequestCore a -> JSVal -> m ()
 rejectReq (RequestCore _ _ rej) v = void $ apply (Function rej) v
-
-eventResult :: PromiseM m => JSVal -> m JSVal
-eventResult ev = do
-  target <- ev ! "target"
-  target ! "result"
-
-eventError :: PromiseM m => JSVal -> m JSVal
-eventError ev = do
-  target <- ev ! "target"
-  target ! "error"
 
 result :: (PromiseM m, FromJSVal a) => Request '[] a -> m a
 result (Typed _ (RequestCore p _ _)) = fromJSValUnchecked =<< await p
@@ -246,9 +206,6 @@ newtype Factory = Factory JSVal
 newtype Database = Database JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
 
-newtype Transaction = Transaction JSVal
-  deriving newtype (FromJSVal, ToObject, ToJSVal)
-
 newtype ObjectStore = ObjectStore JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
 
@@ -261,12 +218,6 @@ newtype Cursor = Cursor JSVal
 newtype KeyRange = KeyRange JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
 
-newtype DbError = DbError JSVal
-  deriving newtype (FromJSVal, ToObject, ToJSVal)
-
-unDbError :: DbError -> JSVal
-unDbError (DbError v) = v
-
 data StoreOptions = StoreOptions
   { storeKeyPath :: Maybe MisoString
   , storeAutoIncrement :: Bool
@@ -278,13 +229,6 @@ instance ToJSVal StoreOptions where
     setProp "keyPath" kp o
     setProp "autoIncrement" ai o
     toJSVal o
-
-data TxMode = ReadOnly | ReadWrite | VersionChange
-
-instance ToJSVal TxMode where
-  toJSVal ReadOnly = toJSVal ("readonly" :: MisoString)
-  toJSVal ReadWrite = toJSVal ("readwrite" :: MisoString)
-  toJSVal VersionChange = toJSVal ("versionchange" :: MisoString)
 
 data Direction = Next | Previous | NextUnique | PreviousUnique
 
@@ -340,71 +284,6 @@ dbVersion (Database db) = fromJSValUnchecked =<< (db ! "version")
 
 objectStore :: MonadIO m => Transaction -> MisoString -> m ObjectStore
 objectStore (Transaction tx) name = ObjectStore <$> (tx # "objectStore" $ name)
-
-abort :: MonadIO m => Transaction -> m ()
-abort (Transaction tx) = void $ tx # "abort" $ ()
-
-commit :: MonadIO m => Transaction -> m ()
-commit (Transaction tx) = void $ tx # "commit" $ ()
-
-type TransactionCallbacks = '["oncomplete", "onerror", "onabort"]
-
-data TransactionCore = TransactionCore Promise JSVal JSVal
-
-type TransactionAwait (pending :: [Symbol]) = Typed pending TransactionCore
-
-transactionAwait :: PromiseM m => Transaction -> m (TransactionAwait TransactionCallbacks)
-transactionAwait (Transaction raw) = do
-  resMv <- newEmptyMVar
-  rejMv <- newEmptyMVar
-  p <- newPromise $ \res rej -> putMVar resMv res >> putMVar rejMv rej
-  res <- readMVar resMv
-  rej <- readMVar rejMv
-  pure $ Typed raw (TransactionCore p res rej)
-
-resolveTx :: PromiseM m => TransactionCore -> m ()
-resolveTx (TransactionCore _ res _) = void $ apply (Function res) ()
-
-rejectTx :: PromiseM m => TransactionCore -> JSVal -> m ()
-rejectTx (TransactionCore _ _ rej) v = void $ apply (Function rej) v
-
-onTransactionComplete :: forall pending rest m.
-  ( PromiseM m
-  , Elem "oncomplete" pending ~ 'True
-  , Drop "oncomplete" pending ~ rest
-  )
-  => m () -> TransactionAwait pending -> m (TransactionAwait rest)
-onTransactionComplete cb req@(Typed _ core) =
-  setCallback @"oncomplete" req $ \_ -> do
-    cb
-    resolveTx core
-
-onTransactionError :: forall pending rest m.
-  ( PromiseM m
-  , Elem "onerror" pending ~ 'True
-  , Drop "onerror" pending ~ rest
-  )
-  => (DbError -> m ()) -> TransactionAwait pending -> m (TransactionAwait rest)
-onTransactionError cb req@(Typed _ core) =
-  setCallback @"onerror" req $ \ev -> do
-    err <- DbError <$> eventError ev
-    cb err
-    rejectTx core (unDbError err)
-
-onTransactionAbort :: forall pending rest m.
-  ( PromiseM m
-  , Elem "onabort" pending ~ 'True
-  , Drop "onabort" pending ~ rest
-  )
-  => (DbError -> m ()) -> TransactionAwait pending -> m (TransactionAwait rest)
-onTransactionAbort cb req@(Typed _ core) =
-  setCallback @"onabort" req $ \ev -> do
-    err <- DbError <$> eventError ev
-    cb err
-    rejectTx core (unDbError err)
-
-awaitTransaction :: PromiseM m => TransactionAwait '[] -> m ()
-awaitTransaction (Typed _ (TransactionCore p _ _)) = void $ await p
 
 put :: (PromiseM m, ToJSVal k, ToJSVal v)
     => ObjectStore -> v -> Maybe k -> m (Request RequestCallbacks JSVal)

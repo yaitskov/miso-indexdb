@@ -40,9 +40,12 @@ library
   hs-source-dirs: src
   exposed-modules:
     Miso.IndexDb
+    Miso.IndexDb.Tx
     Miso.Promise
     Miso.Promise.Demo
     UnliftIO.Miso
+  other-modules:
+    Miso.IndexDb.Internal
   build-depends:
     , miso               >= 1.15
     , mtl                < 3
