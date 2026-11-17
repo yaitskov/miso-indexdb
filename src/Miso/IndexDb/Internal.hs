@@ -16,8 +16,10 @@ module Miso.IndexDb.Internal
   , RequestCallbacks
   , OpenCallbacks
   , DeleteCallbacks
+  , OnSuccess
+  , OnError
   , mkRequest
-  , resolveReq
+  , resolveReq'
   , rejectReq
   , Database(..)
   ) where
@@ -64,7 +66,9 @@ data RequestCore a = RequestCore Promise JSVal JSVal
 
 type Request (pending :: [Symbol]) a = Typed pending (RequestCore a)
 
-type RequestCallbacks = '["onsuccess", "onerror"]
+type OnSuccess = "onsuccess"
+type OnError = "onerror"
+type RequestCallbacks = '[OnSuccess, OnError]
 
 type OpenCallbacks = '["onupgradeneeded", "onblocked", "onsuccess", "onerror"]
 
@@ -79,8 +83,8 @@ mkRequest raw = do
   rej <- readMVar rejMv
   pure $ Typed raw (RequestCore p res rej)
 
-resolveReq :: PromiseM m => RequestCore a -> JSVal -> m ()
-resolveReq (RequestCore _ _ res) v = void $ apply (Function res) v
+resolveReq' :: PromiseM m => RequestCore a -> JSVal -> m ()
+resolveReq' (RequestCore _ _ res) v = void $ apply (Function res) v
 
 rejectReq :: PromiseM m => RequestCore a -> JSVal -> m ()
 rejectReq (RequestCore _ _ rej) v = void $ apply (Function rej) v

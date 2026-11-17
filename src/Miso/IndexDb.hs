@@ -62,7 +62,7 @@ module Miso.IndexDb
   , add
   , get
   , getAll
-  , getKey
+
   , getAllKeys
   , delete
   , clear
@@ -131,7 +131,7 @@ onSuccessWith cb req@(Typed _ core) =
   setCallback @"onsuccess" req $ \ev -> do
     v <- eventResult ev
     cb v
-    resolveReq core v
+    resolveReq' core v
 
 onError :: forall pending rest a m.
   ( PromiseM m

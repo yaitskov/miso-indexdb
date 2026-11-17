@@ -38,7 +38,6 @@ instance ToJSVal TxMode where
 data TxState = TxOpen | TxAborted | TxCommitted deriving (Show, Eq)
 
 type OnComplete = "oncomplete"
-type OnError = "onerror"
 type OnAbort = "onabort"
 
 type TransactionCallbacks = '[OnComplete, OnError, OnAbort]

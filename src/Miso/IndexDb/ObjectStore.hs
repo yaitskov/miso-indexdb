@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 module Miso.IndexDb.ObjectStore
   ( ObjectStore(..)
   , StoreOptions(..)
@@ -8,7 +9,6 @@ module Miso.IndexDb.ObjectStore
   , add
   , get
   , getAll
-  , getKey
   , getAllKeys
   , delete
   , clear
@@ -20,7 +20,47 @@ import Miso.IndexDb.Tx
 import Miso.Promise hiding (get, put, errorMessage)
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
+import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
 import Prelude
+import Control.Concurrent ( MVar)
+import Data.Proxy
+import UnliftIO (throwIO, putMVar, Exception(..), newEmptyMVar, readMVar)
+import Miso.JSON (jsonStringify)
+import System.IO.Unsafe (unsafePerformIO)
+
+newtype DbReq (pending :: [Symbol]) r = DbReq { unDbReq :: JSVal }
+type NewDbReq r = DbReq RequestCallbacks r
+
+newDbReq :: JSVal -> NewDbReq r
+newDbReq = DbReq
+
+setCb :: forall name pending rest m r.
+  ( PromiseM m
+  , KnownSymbol name
+  , Elem name pending ~ 'True
+  , Drop name pending ~ rest
+  )
+  => DbReq pending r -> (JSVal -> m ()) -> m (DbReq rest r)
+setCb (DbReq r) f = do
+  setField r (ms $ symbolVal @name Proxy) =<< mkAsyncCallback1 f
+  pure $ DbReq r
+
+newtype IndexDbException = IndexDbException JSVal
+instance Show IndexDbException where
+  show (IndexDbException j) =
+    "IndexDbException: " <>  show (unsafePerformIO (jsonStringify j))
+
+instance Exception IndexDbException
+
+resolveReq :: (FromJSVal r, PromiseM m) => NewDbReq r -> m r
+resolveReq r = do
+  x  :: MVar (Either JSVal JSVal) <- newEmptyMVar
+  r' <- setCb @OnSuccess r $ \_ -> putMVar x . Right =<< r.unDbReq ! "result"
+  _r'' <- setCb @OnError r' $ \_ -> putMVar x . Left =<< r.unDbReq ! "error"
+  readMVar x >>= \case
+    Left e -> throwIO $ IndexDbException e
+    Right j -> fromJSValUnchecked j
+
 
 newtype ObjectStore = ObjectStore JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
@@ -55,62 +95,36 @@ objectStore :: MonadIO m =>
 objectStore tx name = ObjectStore <$> (tx.tx # "objectStore" $ name)
 
 put :: (PromiseM m, ToJSVal k, ToJSVal v)
-    => ObjectStore -> v -> Maybe k -> m (Request RequestCallbacks JSVal)
-put (ObjectStore os) v mk = do
-  raw <- os # "put" $ (v, mk)
-  mkRequest raw
+    => ObjectStore -> v -> Maybe k -> m (NewDbReq JSVal)
+put (ObjectStore os) v mk = newDbReq <$> (os # "put" $ (v, mk))
 
 add :: (PromiseM m, ToJSVal k, ToJSVal v)
-    => ObjectStore -> v -> Maybe k -> m (Request RequestCallbacks JSVal)
-add (ObjectStore os) v mk = do
-  raw <- os # "add" $ (v, mk)
-  mkRequest raw
+    => ObjectStore -> v -> Maybe k -> m (NewDbReq JSVal)
+add (ObjectStore os) v mk =newDbReq <$> (os # "add" $ (v, mk))
 
 get :: forall a k m. (PromiseM m, ToArgs k, FromJSVal a)
-   => ObjectStore -> k -> m (Request RequestCallbacks a)
-get (ObjectStore os) k = do
-  raw <- os # "get" $ k
-  mkRequest raw
+   => ObjectStore -> k -> m a
+get (ObjectStore os) k =
+  resolveReq . newDbReq =<< (os # "get" $ k)
 
-getAll :: forall a q m. (PromiseM m, ToJSVal q, FromJSVal a)
-       => ObjectStore -> Maybe q -> Maybe Int -> m (Request RequestCallbacks [a])
-getAll (ObjectStore os) q cnt = do
-  raw <- os # "getAll" $ (q, cnt)
-  mkRequest raw
-
-getKey :: (PromiseM m, ToArgs k) =>
-  ObjectStore ->
-  k ->
-  m (Request RequestCallbacks JSVal)
-getKey (ObjectStore os) k = do
-  raw <- os # "getKey" $ k
-  mkRequest raw
+getAll :: forall q m. (PromiseM m, ToJSVal q)
+       => ObjectStore -> Maybe q -> Maybe Int -> m (NewDbReq [JSVal])
+getAll (ObjectStore os) q cnt = newDbReq <$> (os # "getAll" $ (q, cnt))
 
 getAllKeys :: (PromiseM m, ToArgs q) =>
   ObjectStore ->
   Maybe q ->
-  m (Request RequestCallbacks [JSVal])
-getAllKeys (ObjectStore os) q = do
-  raw <- os # "getAllKeys" $ q
-  mkRequest raw
+  m (NewDbReq [JSVal])
+getAllKeys (ObjectStore os) q = newDbReq <$> (os # "getAllKeys" $ q)
 
-delete :: (PromiseM m, ToArgs k) =>
-  ObjectStore ->
-  k ->
-  m (Request RequestCallbacks ())
-delete (ObjectStore os) k = do
-  raw <- os # "delete" $ k
-  mkRequest raw
+delete :: (PromiseM m, ToArgs k) => ObjectStore -> k -> m (NewDbReq ())
+delete (ObjectStore os) k = DbReq <$> (os # "delete" $ k)
 
-clear :: PromiseM m => ObjectStore -> m (Request RequestCallbacks ())
-clear (ObjectStore os) = do
-  raw <- os # "clear" $ ()
-  mkRequest raw
+clear :: PromiseM m => ObjectStore -> m (NewDbReq ())
+clear (ObjectStore os) = DbReq <$> (os # "clear" $ ())
 
 count :: (PromiseM m, ToArgs q) =>
   ObjectStore ->
-  Maybe q ->
-  m (Request RequestCallbacks Int)
-count (ObjectStore os) q = do
-  raw <- os # "count" $ q
-  mkRequest raw
+  Maybe q -> m Int
+count (ObjectStore os) q =
+  resolveReq . newDbReq =<< (os # "count" $ q)
