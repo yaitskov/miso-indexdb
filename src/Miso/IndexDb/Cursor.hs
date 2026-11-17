@@ -1,4 +1,3 @@
-{-# LANGUAGE DerivingStrategies #-}
 module Miso.IndexDb.Cursor
   ( Cursor(..)
   , Direction(..)
