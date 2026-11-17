@@ -13,7 +13,7 @@ import Prelude
 
 
 newtype CbsToFree = CbsToFree { unCbsToFree :: MVar [Function] }
-newtype FfiT m a = FfiT (ReaderT CbsToFree m a)
+newtype PromiseT m a = FfiT (ReaderT CbsToFree m a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadUnliftIO, MonadReader CbsToFree)
 
 type PromiseM m = (MonadUnliftIO m, MonadReader CbsToFree m)
@@ -41,8 +41,8 @@ liftF f a = liftIO (f a)
 liftF2 :: MonadIO m => (a -> c -> IO b) -> a -> c -> m b
 liftF2 f a c = liftIO (f a c)
 
-runFfiT :: MonadUnliftIO m => FfiT m a -> m a
-runFfiT (FfiT f) = do
+runPromiseT :: MonadUnliftIO m => PromiseT m a -> m a
+runPromiseT (FfiT f) = do
   fsMv <- newMVar []
   finally (runReaderT f (CbsToFree fsMv)) do
     mapM_ (liftF freeFunction ) =<< readMVar fsMv
@@ -81,7 +81,7 @@ fromJSValUnchecked = liftF M.fromJSValUnchecked
 
 openDb :: IO JSVal
 openDb = do
-  db' <- runFfiT $ do
+  db' <- runPromiseT $ do
     p <- newPromise (\resolve reject -> do
       indexDb <- jsg "indexDb"
       r <- indexDb # "open" $ ("blob" :: MisoString, 1 :: Int)
