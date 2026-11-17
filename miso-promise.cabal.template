@@ -13,8 +13,6 @@ copyright:     Daniil Iaitkov 2026
 category:      Miso, Promise, Async
 build-type:    Simple
 bug-reports:   https://github.com/yaitskov/miso-promise/issues
-extra-source-files:
-  test/style.css
 extra-doc-files:
   changelog.md
 tested-with:
@@ -42,6 +40,7 @@ library
   hs-source-dirs: src
   exposed-modules:
     Miso.Promise
+    UnliftIO.Miso
   build-depends:
     , miso               >= 1.15
     , mtl                < 3

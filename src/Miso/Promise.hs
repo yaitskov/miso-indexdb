@@ -1,14 +1,17 @@
 {-# LANGUAGE BlockArguments #-}
-module Miso.Promise where
+module Miso.Promise
+  ( module Miso.Promise
+  , module UnliftIO.Miso
+  ) where
 
 import Miso hiding (tell, (#), (!), jsg, setField, fromJSValUnchecked, new, apply, await)
 import Miso qualified as M
-import Miso.DSL qualified as MDSL
 import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import UnliftIO
+import UnliftIO.Miso
 import Prelude
 
 
@@ -35,12 +38,6 @@ mkAsyncCallback1 f = mkAsyncCallbackX $ \riio -> asyncCallback1 $ \x -> riio (f 
 mkAsyncCallback2 :: PromiseM m => (JSVal -> JSVal -> m ()) -> m JSVal
 mkAsyncCallback2 f = mkAsyncCallbackX $ \riio -> asyncCallback2 $ \x y -> riio (f x y)
 
-liftF :: MonadIO m => (a -> IO b) -> a -> m b
-liftF f a = liftIO (f a)
-
-liftF2 :: MonadIO m => (a -> c -> IO b) -> a -> c -> m b
-liftF2 f a c = liftIO (f a c)
-
 runPromiseT :: MonadUnliftIO m => PromiseT m a -> m a
 runPromiseT (FfiT f) = do
   fsMv <- newMVar []
@@ -54,30 +51,8 @@ newPromise f2 = do
   executor <- mkAsyncCallback2 f2
   Promise <$> ((`new` [executor]) =<< jsg "Promise")
 
-(#) :: (MonadIO m, ToObject object, ToArgs args) => object -> MisoString -> args -> m JSVal
-(#) o = liftF2 (o MDSL.#)
-infixr 2 #
-
-(!) :: forall o m. (MonadIO m, ToObject o) => o -> MisoString -> m JSVal
-(!) = liftF2 (MDSL.!)
-
-jsg :: MonadIO m => MisoString -> m JSVal
-jsg = liftF MDSL.jsg
-
 await :: PromiseM m => Promise -> m JSVal
 await (Promise p) = liftIO $ M.await p
-
-new :: forall m a o. (ToObject o, ToArgs a, MonadIO m) => o -> a -> m JSVal
-new = liftF2 MDSL.new
-
-apply :: forall m a. (ToArgs a, MonadIO m) => Function -> a -> m JSVal
-apply = liftF2 MDSL.apply
-
-setField :: forall m o v . (MonadIO m, ToObject o, ToJSVal v) => o -> MisoString -> v -> m ()
-setField o = liftF2 (MDSL.setField o)
-
-fromJSValUnchecked :: (FromJSVal a, MonadIO m) => JSVal -> m a
-fromJSValUnchecked = liftF M.fromJSValUnchecked
 
 openDb :: IO JSVal
 openDb = do
