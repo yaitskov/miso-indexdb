@@ -1,8 +1,8 @@
 cabal-version: 3.0
 name:          miso-promise
-version:       0.0.2
+version:       0.0.1
 
-synopsis:      wrapper over miso checking CSS classes applicability through dependent types
+synopsis:      JS Promise support
 description:
 homepage:      http://github.com/yaitskov/miso-promise
 license:       BSD-3-Clause
@@ -10,7 +10,7 @@ license-file:  LICENSE
 author:        Daniil Iaitskov
 maintainer:    dyaitskov@gmail.com
 copyright:     Daniil Iaitkov 2026
-category:      Miso, HTML, CSS, Template Haskell
+category:      Miso, Promise, Async
 build-type:    Simple
 bug-reports:   https://github.com/yaitskov/miso-promise/issues
 extra-source-files:
@@ -18,7 +18,7 @@ extra-source-files:
 extra-doc-files:
   changelog.md
 tested-with:
-  GHC == 9.12.2
+  GHC == 9.14.1
 
 source-repository head
   type:
@@ -34,10 +34,8 @@ common base
     NoImplicitPrelude
     OverloadedRecordDot
     OverloadedStrings
-    TemplateHaskell
   build-depends:
     , base >=4.7 && < 5
-    , template-haskell  < 3
 
 library
   import: base
@@ -45,6 +43,6 @@ library
   exposed-modules:
     Miso.Promise
   build-depends:
-    , containers         < 1
-    , miso               >= 1.11 && < 1.12
+    , miso               >= 1.15
     , mtl                < 3
+    , unliftio           < 1

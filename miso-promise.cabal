@@ -4,13 +4,29 @@ version:       0.0.1
 
 synopsis:      JS Promise support
 description:
+    == Motivation
+    #motivation#
+    
+    Safer Promise handling in Miso. JS Promise involve lot of callbacks,
+    meanwhile Miso library does not track JS callbacks creation and this can
+    easily cause leaks.
+    
+    == Development environment
+    #development-environment#
+    
+    HLS should be available inside the default dev shell.
+    
+    > $ nix develop
+    > $ emacs src/*/*/Qq.hs &
+    > $ cabal build
+    > $ cabal test --test-option=--hide-successes
 homepage:      http://github.com/yaitskov/miso-promise
 license:       BSD-3-Clause
 license-file:  LICENSE
 author:        Daniil Iaitskov
 maintainer:    dyaitskov@gmail.com
 copyright:     Daniil Iaitkov 2026
-category:      Miso, HTML, CSS, Template Haskell
+category:      Miso, Promise, Async
 build-type:    Simple
 bug-reports:   https://github.com/yaitskov/miso-promise/issues
 extra-source-files:
@@ -18,7 +34,7 @@ extra-source-files:
 extra-doc-files:
   changelog.md
 tested-with:
-  GHC == 9.12.2
+  GHC == 9.14.1
 
 source-repository head
   type:
@@ -43,7 +59,6 @@ library
   exposed-modules:
     Miso.Promise
   build-depends:
-    , containers         < 1
     , miso               >= 1.15
     , mtl                < 3
-    , text               < 3
+    , unliftio           < 1
