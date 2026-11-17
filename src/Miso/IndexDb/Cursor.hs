@@ -16,14 +16,14 @@ module Miso.IndexDb.Cursor
   ) where
 
 import Miso.IndexDb.Index
-import Miso.IndexDb.Internal
 import Miso.IndexDb.ObjectStore
 import Miso.Promise
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
 import Prelude
+import Data.Kind (Type)
 
-newtype Cursor = Cursor JSVal
+newtype Cursor (s :: Type) = Cursor JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
 
 data Direction = Next | Previous | NextUnique | PreviousUnique
@@ -35,69 +35,60 @@ instance ToJSVal Direction where
   toJSVal PreviousUnique = toJSVal ("prevunique" :: MisoString)
 
 openCursor :: (PromiseM m, ToJSVal q) =>
-  ObjectStore ->
+  DataObjectStore s ->
   Maybe q ->
   Maybe Direction ->
-  m (Request RequestCallbacks (Maybe Cursor))
-openCursor (ObjectStore os) q dir = do
-  raw <- os # "openCursor" $ (q, dir)
-  mkRequest raw
+  m (Cursor s)
+openCursor (ObjectStore os) q dir =
+  Cursor <$> (os # "openCursor" $ (q, dir))
 
 openKeyCursor :: (PromiseM m, ToJSVal q) =>
-  ObjectStore ->
+  DataObjectStore s ->
   Maybe q ->
   Maybe Direction ->
-  m (Request RequestCallbacks (Maybe Cursor))
-openKeyCursor (ObjectStore os) q dir = do
-  raw <- os # "openKeyCursor" $ (q, dir)
-  mkRequest raw
+  m (Cursor s)
+openKeyCursor (ObjectStore os) q dir =
+  Cursor <$> (os # "openKeyCursor" $ (q, dir))
 
 indexOpenCursor :: (PromiseM m, ToJSVal q) =>
-  Index ->
+  DataIndex s ->
   Maybe q ->
   Maybe Direction ->
-  m (Request RequestCallbacks (Maybe Cursor))
-indexOpenCursor (Index ix) q dir = do
-  raw <- ix # "openCursor" $ (q, dir)
-  mkRequest raw
+  m (Cursor s)
+indexOpenCursor (Index ix) q dir =
+  Cursor <$> (ix # "openCursor" $ (q, dir))
 
 indexOpenKeyCursor :: (PromiseM m, ToJSVal q) =>
-  Index ->
+  DataIndex s ->
   Maybe q ->
   Maybe Direction ->
-  m (Request RequestCallbacks (Maybe Cursor))
-indexOpenKeyCursor (Index ix) q dir = do
-  raw <- ix # "openKeyCursor" $ (q, dir)
-  mkRequest raw
+  m (Cursor s)
+indexOpenKeyCursor (Index ix) q dir =
+  Cursor <$> (ix # "openKeyCursor" $ (q, dir))
 
-cursorKey :: (MonadIO m, FromJSVal a) => Cursor -> m a
+cursorKey :: (MonadIO m, FromJSVal a) => Cursor s -> m a
 cursorKey (Cursor c) = fromJSValUnchecked =<< (c ! "key")
 
-cursorPrimaryKey :: (MonadIO m, FromJSVal a) => Cursor -> m a
+cursorPrimaryKey :: (MonadIO m, FromJSVal a) => Cursor s -> m a
 cursorPrimaryKey (Cursor c) = fromJSValUnchecked =<< (c ! "primaryKey")
 
-cursorValue :: (MonadIO m, FromJSVal a) => Cursor -> m a
+cursorValue :: (MonadIO m, FromJSVal a) => Cursor s -> m a
 cursorValue (Cursor c) = fromJSValUnchecked =<< (c ! "value")
 
-advance :: MonadIO m => Cursor -> Int -> m ()
+advance :: MonadIO m => Cursor s -> Int -> m ()
 advance (Cursor c) n = void $ c # "advance" $ n
 
-continueCursor :: (MonadIO m, ToArgs k) => Cursor -> Maybe k -> m ()
+continueCursor :: (MonadIO m, ToArgs k) => Cursor s -> Maybe k -> m ()
 continueCursor (Cursor c) mk = void $ c # "continue" $ mk
 
 continuePrimaryKey :: (MonadIO m, ToJSVal k, ToJSVal pk)
-                   => Cursor -> k -> pk -> m ()
+                   => Cursor s -> k -> pk -> m ()
 continuePrimaryKey (Cursor c) k pk = void $ c # "continuePrimaryKey" $ (k, pk)
 
-deleteCursor :: PromiseM m => Cursor -> m (Request RequestCallbacks ())
-deleteCursor (Cursor c) = do
-  raw <- c # "delete" $ ()
-  mkRequest raw
+deleteCursor :: PromiseM m => Cursor s -> m ()
+deleteCursor (Cursor c) =
+  void $ c # "delete" $ ()
 
-updateCursor :: (PromiseM m, ToArgs v) =>
-  Cursor ->
-  v ->
-  m (Request RequestCallbacks JSVal)
-updateCursor (Cursor c) v = do
-  raw <- c # "update" $ v
-  mkRequest raw
+updateCursor :: (PromiseM m, ToArgs v) => Cursor s -> v -> m ()
+updateCursor (Cursor c) v =
+  void $ c # "update" $ v

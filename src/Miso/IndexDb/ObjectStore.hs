@@ -2,6 +2,8 @@
 module Miso.IndexDb.ObjectStore
   ( ObjectStore(..)
   , StoreOptions(..)
+  , MetaObjectStore
+  , DataObjectStore
   , createObjectStore
   , deleteObjectStore
   , objectStore
@@ -27,6 +29,7 @@ import Data.Proxy
 import UnliftIO (throwIO, putMVar, Exception(..), newEmptyMVar, readMVar)
 import Miso.JSON (jsonStringify)
 import System.IO.Unsafe (unsafePerformIO)
+import Data.Kind (Type)
 
 newtype DbReq (pending :: [Symbol]) r = DbReq { unDbReq :: JSVal }
 type NewDbReq r = DbReq RequestCallbacks r
@@ -61,9 +64,11 @@ resolveReq r = do
     Left e -> throwIO $ IndexDbException e
     Right j -> fromJSValUnchecked j
 
-
-newtype ObjectStore = ObjectStore JSVal
+newtype ObjectStore (ts :: Maybe (s :: Type)) = ObjectStore JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
+
+type MetaObjectStore = ObjectStore (Nothing :: Maybe ())
+type DataObjectStore x = ObjectStore (Just x)
 
 data StoreOptions = StoreOptions
   { storeKeyPath :: Maybe MisoString
@@ -81,7 +86,7 @@ createObjectStore :: MonadIO m =>
   Database ->
   MisoString ->
   StoreOptions ->
-  m ObjectStore
+  m MetaObjectStore
 createObjectStore (Database db) name opts =
   ObjectStore <$> (db # "createObjectStore" $ (name, opts))
 
@@ -91,40 +96,40 @@ deleteObjectStore (Database db) name = void $ db # "deleteObjectStore" $ name
 objectStore :: MonadIO m =>
   Tx s '[] r t ->
   MisoString ->
-  m ObjectStore
+  m (DataObjectStore s)
 objectStore tx name = ObjectStore <$> (tx.tx # "objectStore" $ name)
 
-put :: (PromiseM m, ToJSVal k, ToJSVal v)
-    => ObjectStore -> v -> Maybe k -> m (NewDbReq JSVal)
+put :: (PromiseM m, ToJSVal k, ToJSVal v) =>
+  DataObjectStore s -> v -> Maybe k -> m (NewDbReq JSVal)
 put (ObjectStore os) v mk = newDbReq <$> (os # "put" $ (v, mk))
 
-add :: (PromiseM m, ToJSVal k, ToJSVal v)
-    => ObjectStore -> v -> Maybe k -> m (NewDbReq JSVal)
+add :: (PromiseM m, ToJSVal k, ToJSVal v) =>
+  DataObjectStore s -> v -> Maybe k -> m (NewDbReq JSVal)
 add (ObjectStore os) v mk =newDbReq <$> (os # "add" $ (v, mk))
 
-get :: forall a k m. (PromiseM m, ToArgs k, FromJSVal a)
-   => ObjectStore -> k -> m a
+get :: forall a k m s. (PromiseM m, ToArgs k, FromJSVal a)
+   => DataObjectStore s -> k -> m a
 get (ObjectStore os) k =
   resolveReq . newDbReq =<< (os # "get" $ k)
 
-getAll :: forall q m. (PromiseM m, ToJSVal q)
-       => ObjectStore -> Maybe q -> Maybe Int -> m (NewDbReq [JSVal])
+getAll :: forall q m s. (PromiseM m, ToJSVal q) =>
+  DataObjectStore s -> Maybe q -> Maybe Int -> m (NewDbReq [JSVal])
 getAll (ObjectStore os) q cnt = newDbReq <$> (os # "getAll" $ (q, cnt))
 
 getAllKeys :: (PromiseM m, ToArgs q) =>
-  ObjectStore ->
+  DataObjectStore s ->
   Maybe q ->
   m (NewDbReq [JSVal])
 getAllKeys (ObjectStore os) q = newDbReq <$> (os # "getAllKeys" $ q)
 
-delete :: (PromiseM m, ToArgs k) => ObjectStore -> k -> m (NewDbReq ())
+delete :: (PromiseM m, ToArgs k) => DataObjectStore s -> k -> m (NewDbReq ())
 delete (ObjectStore os) k = DbReq <$> (os # "delete" $ k)
 
-clear :: PromiseM m => ObjectStore -> m (NewDbReq ())
+clear :: PromiseM m => DataObjectStore s -> m (NewDbReq ())
 clear (ObjectStore os) = DbReq <$> (os # "clear" $ ())
 
 count :: (PromiseM m, ToArgs q) =>
-  ObjectStore ->
+  DataObjectStore s ->
   Maybe q -> m Int
 count (ObjectStore os) q =
   resolveReq . newDbReq =<< (os # "count" $ q)
