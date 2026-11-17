@@ -4,14 +4,14 @@ module Miso.Promise
   , module UnliftIO.Miso
   ) where
 
-import Miso hiding (tell, (#), (!), jsg, setField, fromJSValUnchecked, new, apply, await)
-import Miso qualified as M
 import Control.Applicative
 import Control.Monad.IO.Class
 import Control.Monad.Reader
+import Miso hiding (tell, (#), (!), jsg, setField, fromJSValUnchecked, new, apply, await)
+import Miso qualified as M
+import Prelude
 import UnliftIO
 import UnliftIO.Miso
-import Prelude
 
 
 newtype CbsToFree = CbsToFree { unCbsToFree :: MVar [Function] }

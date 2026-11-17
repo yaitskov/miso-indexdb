@@ -6,8 +6,8 @@ module Miso.IndexDb.Prelude
   , Type
   ) where
 
-import Prelude
-import UnliftIO
+import Data.Kind (Type)
 import Data.Proxy
 import GHC.TypeLits
-import Data.Kind (Type)
+import Prelude
+import UnliftIO

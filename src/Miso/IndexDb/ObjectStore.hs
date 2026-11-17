@@ -17,12 +17,12 @@ module Miso.IndexDb.ObjectStore
   , count
   ) where
 
-import Miso.IndexDb.Internal
-import Miso.IndexDb.Tx
-import Miso.Promise hiding (get, put, errorMessage)
-import Miso.IndexDb.Prelude
 import Control.Monad (void)
+import Miso.IndexDb.Internal
+import Miso.IndexDb.Prelude
+import Miso.IndexDb.Tx
 import Miso.JSON (jsonStringify)
+import Miso.Promise hiding (get, put, errorMessage)
 import System.IO.Unsafe (unsafePerformIO)
 
 newtype DbReq (pending :: [Symbol]) r = DbReq { unDbReq :: JSVal }

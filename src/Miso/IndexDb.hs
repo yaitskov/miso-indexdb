@@ -99,15 +99,15 @@ module Miso.IndexDb
   , errorMessage
   ) where
 
+import Control.Monad (void)
 import Miso.IndexDb.Cursor
 import Miso.IndexDb.Index
 import Miso.IndexDb.Internal
 import Miso.IndexDb.KeyRange
 import Miso.IndexDb.ObjectStore
+import Miso.IndexDb.Prelude
 import Miso.IndexDb.Tx
 import Miso.Promise hiding (get, put, errorMessage)
-import Control.Monad (void)
-import Miso.IndexDb.Prelude
 
 result :: (PromiseM m, FromJSVal a) => Request '[] a -> m a
 result (Typed _ (RequestCore p _ _)) = fromJSValUnchecked =<< await p

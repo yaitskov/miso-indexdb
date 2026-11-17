@@ -13,10 +13,10 @@ module UnliftIO.Miso
   , fromJSValUnchecked
   ) where
 
+import Control.Monad.IO.Class
 import Miso hiding ((#), (!), jsg, setField, fromJSVal, fromJSValUnchecked, new, apply, await)
 import Miso qualified as M
 import Miso.DSL qualified as MDSL
-import Control.Monad.IO.Class
 import Prelude
 
 liftF :: MonadIO m => (a -> IO b) -> a -> m b

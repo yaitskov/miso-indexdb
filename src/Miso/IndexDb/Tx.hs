@@ -15,11 +15,11 @@ module Miso.IndexDb.Tx
   , onTxAbort
   ) where
 
-import Miso.IndexDb.Internal
-import Miso.Promise
-import Miso.IndexDb.Prelude
 import Control.Monad (void)
 import GHC.Generics
+import Miso.IndexDb.Internal
+import Miso.IndexDb.Prelude
+import Miso.Promise
 
 
 data TxMode = ReadOnly | ReadWrite | VersionChange

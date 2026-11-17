@@ -24,11 +24,11 @@ module Miso.IndexDb.Internal
   , Database(..)
   ) where
 
-import Miso.Promise
-import Miso.IndexDb.Prelude
 import Control.Monad (void)
 import Data.Coerce (coerce)
 import Data.Type.Equality (type (==))
+import Miso.IndexDb.Prelude
+import Miso.Promise
 
 type family Drop (name :: Symbol) (xs :: [Symbol]) :: [Symbol] where
   Drop n '[]       = '[]

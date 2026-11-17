@@ -9,3 +9,4 @@ regenerate it if template changes.
 - don't add pragmas to Haskell files if they are covered by pragams from cabal file
 ## Wrap lines longer than 85
 - operator (`->` or `::`) at the end of line
+## Add new imports keeping asc order

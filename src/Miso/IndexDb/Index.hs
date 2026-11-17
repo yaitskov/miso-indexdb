@@ -12,11 +12,11 @@ module Miso.IndexDb.Index
   , indexCount
   ) where
 
+import Control.Monad (void)
 import Miso.IndexDb.Internal
 import Miso.IndexDb.ObjectStore
-import Miso.Promise
 import Miso.IndexDb.Prelude
-import Control.Monad (void)
+import Miso.Promise
 
 newtype Index (ts :: Maybe (s :: Type)) = Index JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)

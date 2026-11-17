@@ -15,11 +15,11 @@ module Miso.IndexDb.Cursor
   , updateCursor
   ) where
 
+import Control.Monad (void)
 import Miso.IndexDb.Index
 import Miso.IndexDb.ObjectStore
-import Miso.Promise
 import Miso.IndexDb.Prelude
-import Control.Monad (void)
+import Miso.Promise
 
 newtype Cursor (s :: Type) = Cursor JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)

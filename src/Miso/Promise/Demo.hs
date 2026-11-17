@@ -4,8 +4,8 @@ module Miso.Promise.Demo (openDb, remove) where
 import Control.Monad (unless, void, (>=>))
 import Miso.IndexDb as IDB
 import Miso.Promise
-import UnliftIO (bracket)
 import Prelude
+import UnliftIO (bracket)
 
 storeName :: MisoString
 storeName = "blobs"
