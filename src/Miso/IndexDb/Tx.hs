@@ -1,15 +1,18 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
+
 module Miso.IndexDb.Tx
-  ( Transaction(..)
+  ( Tx(..)
   , TxMode(..)
   , abort
   , commit
+  , abortWith
+  , commitWith
   , TransactionCallbacks
-  , TransactionAwait
-  , withTransaction
-  , onTransactionComplete
-  , onTransactionError
-  , onTransactionAbort
-  , awaitTransaction
+  , withTx
+  , onTxComplete
+  , onTxError
+  , onTxAbort
   ) where
 
 import Miso.IndexDb.Internal
@@ -17,12 +20,13 @@ import Miso.Promise
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Kind (Type)
-import GHC.TypeLits (Symbol)
-import UnliftIO (newEmptyMVar, putMVar, readMVar)
-import Prelude
 
-newtype Transaction = Transaction JSVal
-  deriving newtype (FromJSVal, ToObject, ToJSVal)
+import UnliftIO (newEmptyMVar, finally, putMVar, readMVar, MVar)
+import Prelude
+import Data.Proxy (Proxy (Proxy))
+import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
+import GHC.Generics
+
 
 data TxMode = ReadOnly | ReadWrite | VersionChange
 
@@ -31,97 +35,98 @@ instance ToJSVal TxMode where
   toJSVal ReadWrite = toJSVal ("readwrite" :: MisoString)
   toJSVal VersionChange = toJSVal ("versionchange" :: MisoString)
 
-transaction :: MonadIO m =>
+data TxState = TxOpen | TxAborted | TxCommitted deriving (Show, Eq)
+
+type OnComplete = "oncomplete"
+type OnError = "onerror"
+type OnAbort = "onabort"
+
+type TransactionCallbacks = '[OnComplete, OnError, OnAbort]
+
+data Tx (txScope :: Type) (pending :: [Symbol]) r (txState :: TxState)
+  = Tx
+    { tx :: JSVal
+    , mFinished :: MVar ()
+    , mRes :: MVar r
+    } deriving (Generic)
+
+abortWith :: MonadIO m =>
+  Tx s '[] r TxOpen -> r -> m (Tx s '[] r TxAborted)
+abortWith tx r = do
+  putMVar tx.mRes r
+  void $ tx.tx # "abort" $ ()
+  pure (to (from tx))
+
+abort :: MonadIO m => Tx s '[] () TxOpen -> m (Tx s '[] () TxAborted)
+abort tx = abortWith tx ()
+
+commitWith :: MonadIO m =>
+  Tx s '[] r TxOpen -> r -> m (Tx s '[] r TxCommitted)
+commitWith tx r = do
+  putMVar tx.mRes r
+  void $ tx.tx # "commit" $ ()
+  pure (to (from tx))
+commit :: MonadIO m => Tx s '[] () TxOpen -> m (Tx s '[] () TxCommitted)
+commit tx = commitWith tx ()
+
+type family TxIsComplete txs where
+  TxIsComplete TxOpen = 'False
+  TxIsComplete TxAborted = 'True
+  TxIsComplete TxCommitted = 'True
+
+withTx :: forall r m tsx.
+  (TxIsComplete tsx ~ 'True, PromiseM m) =>
   Database ->
   [MisoString] ->
   TxMode ->
-  m Transaction
-transaction (Database db) names mode =
-  Transaction <$> (db # "transaction" $ (names, mode))
+  (forall s. Tx s TransactionCallbacks r TxOpen -> m (Tx s '[] r tsx)) ->
+  m r
+withTx db names mode f = do
+  tx <- Tx <$> (db # "transaction" $ (names, mode)) <*> newEmptyMVar <*> newEmptyMVar
+  tx' <- f tx
+  readMVar tx'.mRes
 
-abort :: MonadIO m => TransactionAwait s pending -> m ()
-abort (Typed raw _) = void $ raw # "abort" $ ()
-
-commit :: MonadIO m => TransactionAwait s pending -> m ()
-commit (Typed raw _) = void $ raw # "commit" $ ()
-
-type TransactionCallbacks = '["oncomplete", "onerror", "onabort"]
-
-data TransactionCore s = TransactionCore Promise JSVal JSVal
-
-type TransactionAwait (s :: Type) (pending :: [Symbol]) =
-  Typed pending (TransactionCore s)
-
-transactionAwait :: PromiseM m =>
-  Transaction ->
-  m (TransactionAwait s TransactionCallbacks)
-transactionAwait (Transaction raw) = do
-  resMv <- newEmptyMVar
-  rejMv <- newEmptyMVar
-  p <- newPromise $ \res rej -> putMVar resMv res >> putMVar rejMv rej
-  res <- readMVar resMv
-  rej <- readMVar rejMv
-  pure $ Typed raw (TransactionCore p res rej)
-
-withTransaction :: PromiseM m =>
-  Database ->
-  [MisoString] ->
-  TxMode ->
-  (forall s. TransactionAwait s TransactionCallbacks ->
-    m (TransactionAwait s '[])) ->
-  m ()
-withTransaction db names mode f = do
-  tx <- transaction db names mode
-  initial <- transactionAwait tx
-  done <- f initial
-  awaitTransaction done
-
-resolveTx :: PromiseM m => TransactionCore s -> m ()
-resolveTx (TransactionCore _ res _) = void $ apply (Function res) ()
-
-rejectTx :: PromiseM m => TransactionCore s -> JSVal -> m ()
-rejectTx (TransactionCore _ _ rej) v = void $ apply (Function rej) v
-
-onTransactionComplete :: forall s pending rest m.
+setCb :: forall name s pending rest m r t.
   ( PromiseM m
-  , Elem "oncomplete" pending ~ 'True
-  , Drop "oncomplete" pending ~ rest
-  ) =>
-  m () ->
-  TransactionAwait s pending ->
-  m (TransactionAwait s rest)
-onTransactionComplete cb req@(Typed _ core) =
-  setCallback @"oncomplete" req $ \_ -> do
-    cb
-    resolveTx core
+  , KnownSymbol name
+  , Elem name pending ~ 'True
+  , Drop name pending ~ rest
+  )
+  => Tx s pending r t -> (JSVal -> m ()) -> m (Tx s rest r t)
+setCb tx f = do
+  setField tx.tx (ms $ symbolVal @name Proxy) =<< mkAsyncCallback1 f
+  pure $ to (from tx)
 
-onTransactionError :: forall s pending rest m.
+onTransactionX :: forall x s pending rest m r t.
   ( PromiseM m
-  , Elem "onerror" pending ~ 'True
-  , Drop "onerror" pending ~ rest
+  , KnownSymbol x
+  , Elem x pending ~ 'True
+  , Drop x pending ~ rest
   ) =>
-  (DbError -> m ()) ->
-  TransactionAwait s pending ->
-  m (TransactionAwait s rest)
-onTransactionError cb req@(Typed _ core) =
-  setCallback @"onerror" req $ \ev -> do
-    err <- DbError <$> eventError ev
-    cb err
-    rejectTx core (unDbError err)
+  (JSVal -> m ()) ->
+  Tx s pending r t ->
+  m (Tx s rest r t)
+onTransactionX cb tx =
+  setCb @x tx $ \a -> do
+    finally (cb a) (putMVar tx.mFinished ())
 
-onTransactionAbort :: forall s pending rest m.
+type OnTransX x s pending rest m r txState  =
   ( PromiseM m
-  , Elem "onabort" pending ~ 'True
-  , Drop "onabort" pending ~ rest
+  , Elem x pending ~ 'True
+  , Drop x pending ~ rest
   ) =>
-  (DbError -> m ()) ->
-  TransactionAwait s pending ->
-  m (TransactionAwait s rest)
-onTransactionAbort cb req@(Typed _ core) =
-  setCallback @"onabort" req $ \ev -> do
-    err <- DbError <$> eventError ev
-    cb err
-    rejectTx core (unDbError err)
+  (JSVal -> m ()) ->
+  Tx s pending r txState ->
+  m (Tx s rest r txState)
 
-awaitTransaction :: PromiseM m => TransactionAwait s '[] -> m ()
-awaitTransaction (Typed _ (TransactionCore p _ _)) = void $ await p
+onTxComplete ::
+  forall x s pending rest m r t. (x ~ OnComplete) => OnTransX x s pending rest m r t
+onTxComplete = onTransactionX @x
+
+onTxError ::
+  forall x s pending rest m r t. (x ~ OnError) => OnTransX x s pending rest m r t
+onTxError = onTransactionX @x
+
+onTxAbort ::
+  forall x s pending rest m r t. (x ~ OnAbort) => OnTransX x s pending rest m r t
+onTxAbort = onTransactionX @x

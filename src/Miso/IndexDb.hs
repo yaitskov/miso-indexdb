@@ -23,7 +23,7 @@ module Miso.IndexDb
     -- * Typed objects
   , Factory(..)
   , Database(..)
-  , Transaction(..)
+  , Tx
   , ObjectStore(..)
   , Index(..)
   , Cursor(..)
@@ -47,17 +47,16 @@ module Miso.IndexDb
   , dbName
   , dbVersion
     -- * Transaction
-  , withTransaction
+  , withTx
   , Miso.IndexDb.objectStore
   , abort
   , commit
     -- * Transaction completion
   , TransactionCallbacks
-  , TransactionAwait
-  , onTransactionComplete
-  , onTransactionError
-  , onTransactionAbort
-  , awaitTransaction
+
+  , onTxComplete
+  , onTxError
+  , onTxAbort
     -- * Object store
   , put
   , add
@@ -237,10 +236,10 @@ dbVersion :: MonadIO m => Database -> m Int
 dbVersion (Database db) = fromJSValUnchecked =<< (db ! "version")
 
 objectStore :: MonadIO m =>
-  TransactionAwait s pending ->
+  Tx s '[] r t ->
   MisoString ->
   m ObjectStore
-objectStore (Typed raw _) name = ObjectStore <$> (raw # "objectStore" $ name)
+objectStore tx name = ObjectStore <$> (tx.tx # "objectStore" $ name)
 
 put :: (PromiseM m, ToJSVal k, ToJSVal v)
     => ObjectStore -> v -> Maybe k -> m (Request RequestCallbacks JSVal)
@@ -271,7 +270,8 @@ getKey (ObjectStore os) k = do
   raw <- os # "getKey" $ k
   mkRequest raw
 
-getAllKeys :: (PromiseM m, ToArgs q) => ObjectStore -> Maybe q -> m (Request RequestCallbacks [JSVal])
+getAllKeys :: (PromiseM m, ToArgs q) =>
+  ObjectStore -> Maybe q -> m (Request RequestCallbacks [JSVal])
 getAllKeys (ObjectStore os) q = do
   raw <- os # "getAllKeys" $ q
   mkRequest raw

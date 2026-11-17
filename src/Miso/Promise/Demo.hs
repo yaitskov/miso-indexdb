@@ -1,8 +1,8 @@
 {-# LANGUAGE BlockArguments #-}
 module Miso.Promise.Demo (openDb, remove) where
 
-import Control.Monad (unless, void)
-import Miso.IndexDb qualified as IDB
+import Control.Monad (unless, void, (>=>))
+import Miso.IndexDb as IDB
 import Miso.Promise
 import UnliftIO (bracket)
 import Prelude
@@ -20,21 +20,23 @@ openDb = runPromiseT do
     =<< IDB.onUpgradeNeeded upgradeStore
     =<< IDB.open f "blob" (Just 1)
 
-upgradeStore :: PromiseM m => IDB.Database -> m ()
+upgradeStore :: PromiseM m => Database -> m ()
 upgradeStore db = do
   storeExists <- IDB.hasObjectStore db storeName
   unless storeExists do
     void $ IDB.createObjectStore db storeName (IDB.StoreOptions Nothing True)
 
-withDatabase :: (IDB.Database -> PromiseT IO a) -> IO a
+withDatabase :: (Database -> PromiseT IO a) -> IO a
 withDatabase f = bracket openDb IDB.close (runPromiseT . f)
 
 remove :: MisoString -> MisoString -> IO ()
 remove store key = withDatabase \db ->
-  IDB.withTransaction db [storeName] IDB.ReadWrite \tx -> do
-    os <- IDB.objectStore tx storeName
-    void $ IDB.delete os [store, key]
-    IDB.onTransactionAbort (\_ -> pure ())
-      =<< IDB.onTransactionError (\_ -> pure ())
-      =<< IDB.onTransactionComplete (pure ())
-      =<< pure tx
+  IDB.withTx db [store] IDB.ReadWrite (
+    onTxComplete (const $ pure ()) >=>
+    onTxError (\_ -> pure ()) >=>
+    onTxAbort (\_ -> pure ()) >=>
+    \tx -> do
+      os <- objectStore tx store
+      void $ IDB.delete os key
+      commit tx
+  )
