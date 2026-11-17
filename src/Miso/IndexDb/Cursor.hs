@@ -15,7 +15,6 @@ module Miso.IndexDb.Cursor
   , updateCursor
   ) where
 
-import Control.Monad (void)
 import Miso.IndexDb.Index
 import Miso.IndexDb.ObjectStore
 import Miso.IndexDb.Prelude

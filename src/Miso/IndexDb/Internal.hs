@@ -24,7 +24,6 @@ module Miso.IndexDb.Internal
   , Database(..)
   ) where
 
-import Control.Monad (void)
 import Data.Coerce (coerce)
 import Data.Type.Equality (type (==))
 import Miso.IndexDb.Prelude

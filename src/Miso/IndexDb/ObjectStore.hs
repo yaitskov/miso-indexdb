@@ -17,7 +17,6 @@ module Miso.IndexDb.ObjectStore
   , count
   ) where
 
-import Control.Monad (void)
 import Miso.IndexDb.Internal
 import Miso.IndexDb.Prelude
 import Miso.IndexDb.Tx

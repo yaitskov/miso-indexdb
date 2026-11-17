@@ -12,7 +12,6 @@ module Miso.IndexDb.Index
   , indexCount
   ) where
 
-import Control.Monad (void)
 import Miso.IndexDb.Internal
 import Miso.IndexDb.ObjectStore
 import Miso.IndexDb.Prelude

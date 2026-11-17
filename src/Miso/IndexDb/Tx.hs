@@ -15,7 +15,6 @@ module Miso.IndexDb.Tx
   , onTxAbort
   ) where
 
-import Control.Monad (void)
 import GHC.Generics
 import Miso.IndexDb.Internal
 import Miso.IndexDb.Prelude

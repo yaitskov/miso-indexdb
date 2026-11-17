@@ -99,7 +99,6 @@ module Miso.IndexDb
   , errorMessage
   ) where
 
-import Control.Monad (void)
 import Miso.IndexDb.Cursor
 import Miso.IndexDb.Index
 import Miso.IndexDb.Internal
