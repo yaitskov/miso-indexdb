@@ -1,8 +1,10 @@
 {-# LANGUAGE BlockArguments #-}
-module Miso.Promise.Demo (openDb) where
+module Miso.Promise.Demo (openDb, remove) where
 
 import Control.Monad (void, when)
+import Miso.IndexDb qualified as IDB
 import Miso.Promise
+import UnliftIO (bracket)
 import Prelude
 
 openDb :: IO JSVal
@@ -25,6 +27,20 @@ openDb = do
       )
     await p
   pure db'
+
+withDatabase :: (IDB.Database -> PromiseT IO a) -> IO a
+withDatabase f = bracket (IDB.Database <$> openDb) IDB.close (runPromiseT . f)
+
+remove :: MisoString -> MisoString -> IO ()
+remove store key = withDatabase \db -> do
+  tx <- IDB.transaction db ["blobs"] IDB.ReadWrite
+  os <- IDB.objectStore tx "blobs"
+  void $ IDB.delete os [store, key]
+  tx' <- IDB.transactionAwait tx
+  complete <- IDB.onTransactionComplete (pure ()) tx'
+  failed <- IDB.onTransactionError (\_ -> pure ()) complete
+  aborted <- IDB.onTransactionAbort (\_ -> pure ()) failed
+  IDB.awaitTransaction aborted
 {- function openDatabase() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
