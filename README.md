@@ -53,3 +53,13 @@ HLS should be available inside the default dev shell.
 $ nix develop
 $ cabal build
 ```
+
+### In Browser Testing
+This is a frontend library and the most crucial tests require the
+browser API (IndexDB in particular), which is available only for WASM
+back, which in turn is not first class citizen yet.
+
+``` shell
+$ nix develop .#wasm
+$ ./test.sh
+```

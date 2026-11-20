@@ -1,0 +1,13 @@
+packages:
+  .
+
+allow-newer:
+  all:base
+
+constraints:
+  aeson >= 2
+
+-- HLS is only working with native GHC backend,
+-- that backend disables test-suit which requires WASM only backend
+-- so this is a hack to enable IDE highlight in tests
+flags: +hls-mode

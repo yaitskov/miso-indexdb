@@ -7,8 +7,9 @@
         "github:dmjio/miso";
       flake = false;
     };
+    miso-flake.url = "github:dmjio/miso/1.15.0";
   };
-  outputs = inputs@{ self, nixpkgs, flake-utils, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-utils, miso-flake, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         ghcName = "ghc914";
@@ -53,6 +54,8 @@
               echo $(dirname $(dirname $(which ghc)))/share/doc > .haddock-ref
             '';
           };
+          # profile for running tests in browser
+          wasm = miso-flake.devShells.${system}.wasm;
         };
     });
 }

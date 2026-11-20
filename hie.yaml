@@ -4,3 +4,8 @@ cradle:
       config:
         cradle:
           cabal:
+    - path: "./test"
+      config:
+        cradle:
+          cabal:
+            cabalProject: "cabal.hls.project"
