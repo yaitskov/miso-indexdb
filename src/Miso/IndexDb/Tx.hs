@@ -17,6 +17,7 @@ module Miso.IndexDb.Tx
 
 import GHC.Generics
 import Miso.IndexDb.Internal
+import Miso.IndexDb.JsVal
 import Miso.IndexDb.Prelude
 import Miso.Promise
 
@@ -37,7 +38,7 @@ type TransactionCallbacks = '[OnComplete, OnError, OnAbort]
 
 data Tx (txScope :: Type) (pending :: [Symbol]) r (txState :: TxState)
   = Tx
-    { tx :: JSVal
+    { tx :: JsVal pending
     , mFinished :: MVar ()
     , mRes :: MVar r
     } deriving (Generic)
@@ -74,7 +75,7 @@ withTx :: forall r m tsx.
   (forall s. Tx s TransactionCallbacks r TxOpen -> m (Tx s '[] r tsx)) ->
   m r
 withTx db names mode f = do
-  tx <- Tx <$> (db # "transaction" $ (names, mode)) <*> newEmptyMVar <*> newEmptyMVar
+  tx <- Tx<$> (JsVal <$> (db # "transaction" $ (names, mode))) <*> newEmptyMVar <*> newEmptyMVar
   tx' <- f tx
   readMVar tx'.mRes
 
@@ -86,8 +87,9 @@ setCb :: forall name s pending rest m r t.
   )
   => Tx s pending r t -> (JSVal -> m ()) -> m (Tx s rest r t)
 setCb tx f = do
-  setField tx.tx (ms $ symbolVal @name Proxy) =<< mkAsyncCallback1 f
-  pure $ to (from tx)
+  tx' <- setCallback1 @name tx.tx f
+  -- setField tx.tx (ms $ symbolVal @name Proxy) =<< mkAsyncCallback1 f
+  pure $ Tx tx' tx.mFinished tx.mRes
 
 onTransactionX :: forall x s pending rest m r t.
   ( PromiseM m

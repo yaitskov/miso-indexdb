@@ -25,30 +25,9 @@ module Miso.IndexDb.Internal
   ) where
 
 import Data.Coerce (coerce)
-import Data.Type.Equality (type (==))
 import Miso.IndexDb.Prelude
+import Miso.IndexDb.JsVal
 import Miso.Promise
-
-type family Drop (name :: Symbol) (xs :: [Symbol]) :: [Symbol] where
-  Drop n '[]       = '[]
-  Drop n (x ': xs) = DropStep (n == x) n x xs
-
-type family DropStep
-  (same :: Bool)
-  (n :: Symbol)
-  (x :: Symbol)
-  (xs :: [Symbol]) ::
-  [Symbol] where
-  DropStep 'True  n x xs = Drop n xs
-  DropStep 'False n x xs = x ': Drop n xs
-
-type family Elem (name :: Symbol) (xs :: [Symbol]) :: Bool where
-  Elem n '[]       = 'False
-  Elem n (x ': xs) = ElemStep (n == x) n xs
-
-type family ElemStep (same :: Bool) (n :: Symbol) (xs :: [Symbol]) :: Bool where
-  ElemStep 'True  n xs = 'True
-  ElemStep 'False n xs = Elem n xs
 
 data Typed (pending :: [Symbol]) a = Typed JSVal a
 
