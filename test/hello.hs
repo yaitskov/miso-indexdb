@@ -8,6 +8,7 @@ import Miso.IndexDb
 import Miso.Promise
 import Control.Monad
 import Miso.Promise.Demo
+import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
 import Control.Monad.IO.Class
@@ -57,6 +58,30 @@ isolationTest =
             deleteAllDbs f
             listDatabaseNames f
 
+-- foo :: MisoString -> IO Expectation
+-- foo dbName = runPromiseT do
+--   -- pure $ dbName `shouldBe` "e"
+--   closeDb =<< openDb (dbName)
+--   f <- factory
+--   dbNames <- fmap (\x -> x.name) <$> listDatabaseNames f
+--   () <- await =<< deleteDatabase f dbName
+--   pure $ dbNames `shouldContain` [dbName]
+
+parallelTests :: IO ()
+parallelTests = hspec do
+  describe "IndexDb parallel" do
+    it "openDb creates db if missing" do
+        property $ \(dbName':: String) ->
+          dbName' /= [] ==> idempotentIOProperty do
+            let dbName = ms dbName'
+            runPromiseT do
+              closeDb =<< openDb (dbName)
+              f <- factory
+              dbNames <- fmap (\x -> x.name) <$> listDatabaseNames f
+              () <- await =<< deleteDatabase f dbName
+              pure $ dbNames `shouldContain` [dbName]
+
 main :: IO ()
 main = do
   isolationTest
+  parallelTests
