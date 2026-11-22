@@ -130,34 +130,32 @@ library
     , mtl                < 3
     , unliftio           < 1
 
-test-suite test
+common test-base
   build-depends:
-    base
+    base,
+    miso,
+    miso-indexdb,
+    hspec >= 2.11,
+    QuickCheck >= 2.15.0.1,
   default-language: GHC2024
   ghc-options:
     -Wall
 
-  type: exitcode-stdio-1.0
+test-suite test
+  import: test-base
   hs-source-dirs: test-no-ffi
+  type: exitcode-stdio-1.0
   main-is: hello.hs
 
 test-suite browser
+  import: test-base
   if arch(wasm32) || flag(hls-mode)
     buildable: True
   else
     buildable: False
 
   build-depends:
-    base,
-    miso,
-    miso-indexdb,
-    ghc-experimental,
-    QuickCheck >= 2.15.0.1,
-
-  default-language: GHC2024
-  ghc-options:
-    -Wall
-
-  type: exitcode-stdio-1.0
+    ghc-experimental
   hs-source-dirs: test
+  type: exitcode-stdio-1.0
   main-is: hello.hs
