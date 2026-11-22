@@ -38,15 +38,15 @@ deleteAllDbs idb = do
 asm :: MonadIO m => String -> (t -> Bool) -> IO t -> PropertyM m ()
 asm msg p mv = (liftIO mv) >>= \v -> assertWith (p v) msg
 
-main :: IO ()
-main = do
-  runPromiseT do
-    deleteAllDbs =<< factory
+isolationTest :: IO ()
+isolationTest =
   quickCheck do
-    withNumTests 1 do
+    withMaxSuccess 1 do
       monadicIO do
         asm "No DBs after deleteAllDbs" ([] ==) do
-          runPromiseT (factory >>= listDatabaseNames)
+          runPromiseT do
+            deleteAllDbs =<< factory
+            factory >>= listDatabaseNames
         asm "openDb & closeDb creates db" (elem "db1" . fmap (\x -> x.name)) do
           runPromiseT do
             openDb "db1" >>= closeDb
@@ -56,3 +56,7 @@ main = do
             f <- factory
             deleteAllDbs f
             listDatabaseNames f
+
+main :: IO ()
+main = do
+  isolationTest
