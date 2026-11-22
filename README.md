@@ -1,8 +1,8 @@
-# miso-promise
+# miso-indexdb
 
 ## Motivation
 
-More typed and structured way for handingi promises in Miso.
+IndexDB binding for Miso and Haskell.
 
 ### Bare JS
 An agent generates a decent JS code in case of IndexDB, for example, but it is JS...

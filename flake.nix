@@ -22,7 +22,7 @@
                    builtins.any file.hasExt [ "cabal" "hs" "md" "css" ])
             root;
         };
-        packageName = "miso-promise";
+        packageName = "miso-indexdb";
         pkgs = import nixpkgs { inherit system; };
         # pkgs = nixpkgs.legacyPackages.${system};
         inherit (pkgs.haskell.lib) dontCheck; #  enableCabalFlag;

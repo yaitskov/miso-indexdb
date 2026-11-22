@@ -1,5 +1,5 @@
 cabal-version: 3.14
-name:          miso-promise
+name:          miso-indexdb
 version:       0.0.1
 
 synopsis:      IndexDB binding
@@ -7,7 +7,7 @@ description:
     == Motivation
     #motivation#
     
-    More typed and structured way for handingi promises in Miso.
+    IndexDB binding for Miso and Haskell.
     
     === Bare JS
     #bare-js#
@@ -67,7 +67,7 @@ description:
     
     > $ nix develop .#wasm
     > $ ./test.sh
-homepage:      http://github.com/yaitskov/miso-promise
+homepage:      http://github.com/yaitskov/miso-indexdb
 license:       BSD-3-Clause
 license-file:  LICENSE
 author:        Daniil Iaitskov
@@ -75,7 +75,7 @@ maintainer:    dyaitskov@gmail.com
 copyright:     Daniil Iaitkov 2026
 category:      Miso, Promise, Async
 build-type:    Simple
-bug-reports:   https://github.com/yaitskov/miso-promise/issues
+bug-reports:   https://github.com/yaitskov/miso-indexdb/issues
 extra-doc-files:
   changelog.md
 tested-with:
@@ -90,7 +90,7 @@ source-repository head
   type:
     git
   location:
-    https://github.com/yaitskov/miso-promise.git
+    https://github.com/yaitskov/miso-indexdb.git
 
 common base
   default-language: GHC2024
@@ -150,7 +150,7 @@ test-suite browser
   build-depends:
     base,
     miso,
-    miso-promise,
+    miso-indexdb,
     ghc-experimental,
     QuickCheck >= 2.15.0.1,
 
