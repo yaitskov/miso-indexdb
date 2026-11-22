@@ -1,8 +1,8 @@
-cabal-version: 3.0
+cabal-version: 3.14
 name:          miso-promise
 version:       0.0.1
 
-synopsis:      JS Promise support
+synopsis:      IndexDB binding
 description:
     == Motivation
     #motivation#
@@ -57,6 +57,16 @@ description:
     
     > $ nix develop
     > $ cabal build
+    
+    === In Browser Testing
+    #in-browser-testing#
+    
+    This is a frontend library and the most crucial tests require the
+    browser API (IndexDB in particular), which is available only for WASM
+    back, which in turn is not first class citizen yet.
+    
+    > $ nix develop .#wasm
+    > $ ./test.sh
 homepage:      http://github.com/yaitskov/miso-promise
 license:       BSD-3-Clause
 license-file:  LICENSE
@@ -111,10 +121,25 @@ library
     Miso.IndexDb.Internal
     Miso.IndexDb.JsVal
     Miso.IndexDb.Prelude
+    Miso.IndexDb.Request
+    Miso.IndexDb.List
+    Miso.IndexDb.Database
+    Miso.IndexDb.Factory
   build-depends:
     , miso               >= 1.15
     , mtl                < 3
     , unliftio           < 1
+
+test-suite test
+  build-depends:
+    base
+  default-language: GHC2024
+  ghc-options:
+    -Wall
+
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test-no-ffi
+  main-is: hello.hs
 
 test-suite browser
   if arch(wasm32) || flag(hls-mode)
@@ -125,6 +150,7 @@ test-suite browser
   build-depends:
     base,
     miso,
+    miso-promise,
     ghc-experimental,
     QuickCheck >= 2.15.0.1,
 

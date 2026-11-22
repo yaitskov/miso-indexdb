@@ -1,25 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Main
-  ( main,
-  )
-where
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+module Main where
 
 import Data.List
-import Miso
--- import Miso.DSL
--- import GHC.Wasm.Prim
--- import Test.QuickCheck
--- import Test.QuickCheck.Monadic
+import Miso.IndexDb
+import Miso.Promise
+import Control.Monad
+import Miso.Promise.Demo
+import Test.QuickCheck
+import Test.QuickCheck.Monadic
+import Control.Monad.IO.Class
 
--- prop_factor :: Positive Integer -> Property
--- prop_factor (Positive n) = monadicIO $ do
---   factors <- run (factor n)
---   assert (product factors == n)
--- echo main | wasm32-wasi-cabal --verbose repl browser -v0
--- start browser in async but with delay
--- echo main | wasm32-wasi-cabal --verbose repl browser --repl-options=-fghci-browser -v0
-main :: IO ()
-main = do
+old_main :: IO ()
+old_main = do
   dateType <- jsg "Date"
   d <- new dateType ()
   ds <- d # "toString" $ ()
@@ -30,4 +24,34 @@ main = do
   putStrLn $ "indexedDb is available: " <> show indexDbOk
   dbs :: [String] <- fromJSValUnchecked =<< await =<< (indexDb # "databases" $ ())
   putStrLn $ "Databases: " <> intercalate ", " dbs
--- main = quickCheck $ \s -> s == fromJSString (toJSString s)
+
+
+deleteAllDbs :: PromiseM m => Factory -> m ()
+deleteAllDbs idb = do
+  dbNames <- listDatabaseNames idb
+  consoleLog $ "DB found: " <> ms (show (length dbNames))
+  forM_ dbNames $ \dbi -> do
+    consoleLog $ "Deleting DB " <> dbi.name
+    () <- await =<< deleteDatabase idb dbi.name
+    consoleLog $ "DB " <> dbi.name <> " has been deleted"
+
+asm :: MonadIO m => String -> (t -> Bool) -> IO t -> PropertyM m ()
+asm msg p mv = (liftIO mv) >>= \v -> assertWith (p v) msg
+
+main :: IO ()
+main = do
+  runPromiseT do
+    deleteAllDbs =<< factory
+  quickCheck do
+    monadicIO do
+      asm "No DBs after deleteAllDbs" ([] ==) do
+        runPromiseT (factory >>= listDatabaseNames)
+      asm "openDb & closeDb creates db" (elem "db1" . fmap (\x -> x.name)) do
+        runPromiseT do
+          openDb "db1" >>= closeDb
+          factory >>= listDatabaseNames
+      asm "No DBs after deleteAllDbs2" ([] ==) do
+        runPromiseT do
+          f <- factory
+          deleteAllDbs f
+          listDatabaseNames f

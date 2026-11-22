@@ -1,15 +1,12 @@
 module Miso.IndexDb.Prelude
-  ( module Control.Monad
-  , module Prelude
-  , module UnliftIO
-  , module Data.Proxy
-  , module GHC.TypeLits
+  ( module X
   , Type
   ) where
 
-import Control.Monad
+import Control.Monad as X
 import Data.Kind (Type)
-import Data.Proxy
-import GHC.TypeLits
-import Prelude
-import UnliftIO
+import Data.Proxy as X
+import GHC.TypeLits as X
+import GHC.Generics as X
+import Prelude as X
+import UnliftIO as X

@@ -1,5 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
+{-# LANGUAGE RequiredTypeArguments #-}
 
 module Miso.IndexDb.Tx
   ( Tx(..)
@@ -16,10 +15,12 @@ module Miso.IndexDb.Tx
   ) where
 
 import GHC.Generics
-import Miso.IndexDb.Internal
+import Miso.IndexDb.Database
 import Miso.IndexDb.JsVal
 import Miso.IndexDb.Prelude
 import Miso.Promise
+import Miso.IndexDb.Request
+-- import Miso.IndexDb.List
 
 
 data TxMode = ReadOnly | ReadWrite | VersionChange
@@ -31,6 +32,11 @@ instance ToJSVal TxMode where
 
 data TxState = TxOpen | TxAborted | TxCommitted deriving (Show, Eq)
 
+type family TxMethod a where
+  TxMethod TxAborted = Just "abort"
+  TxMethod TxCommitted = Just "commit"
+  TxMethod TxOpen = Nothing
+
 type OnComplete = "oncomplete"
 type OnAbort = "onabort"
 
@@ -38,27 +44,33 @@ type TransactionCallbacks = '[OnComplete, OnError, OnAbort]
 
 data Tx (txScope :: Type) (pending :: [Symbol]) r (txState :: TxState)
   = Tx
-    { tx :: JsVal pending
-    , mFinished :: MVar ()
-    , mRes :: MVar r
-    } deriving (Generic)
+    { tx :: Request r pending
+    , finishedWith :: MVar r
+    } deriving Generic
+
+instance ToObject (Tx s p r t) where
+  toObject tx = toObject tx.tx
+
+endTxWith ::
+  forall t m mn r s.
+  (MonadIO m, KnownSymbol mn, TxMethod t ~ Just mn) =>
+  Tx s '[] r TxOpen -> r -> m (Tx s '[] r t)
+endTxWith tx r = do
+  putMVar tx.finishedWith r
+  void $ tx # (ms $ symbolVal (Proxy @mn)) $ ()
+  pure (to (from tx))
 
 abortWith :: MonadIO m =>
   Tx s '[] r TxOpen -> r -> m (Tx s '[] r TxAborted)
-abortWith tx r = do
-  putMVar tx.mRes r
-  void $ tx.tx # "abort" $ ()
-  pure (to (from tx))
+abortWith = endTxWith
 
 abort :: MonadIO m => Tx s '[] () TxOpen -> m (Tx s '[] () TxAborted)
 abort tx = abortWith tx ()
 
 commitWith :: MonadIO m =>
   Tx s '[] r TxOpen -> r -> m (Tx s '[] r TxCommitted)
-commitWith tx r = do
-  putMVar tx.mRes r
-  void $ tx.tx # "commit" $ ()
-  pure (to (from tx))
+commitWith  = endTxWith
+
 commit :: MonadIO m => Tx s '[] () TxOpen -> m (Tx s '[] () TxCommitted)
 commit tx = commitWith tx ()
 
@@ -66,6 +78,9 @@ type family TxIsComplete txs where
   TxIsComplete TxOpen = 'False
   TxIsComplete TxAborted = 'True
   TxIsComplete TxCommitted = 'True
+
+instance (TxIsComplete tsx ~ 'True) => Awaitable (Tx s '[] r tsx) r where
+  await tx = await tx.tx
 
 withTx :: forall r m tsx.
   (TxIsComplete tsx ~ 'True, PromiseM m) =>
@@ -75,52 +90,46 @@ withTx :: forall r m tsx.
   (forall s. Tx s TransactionCallbacks r TxOpen -> m (Tx s '[] r tsx)) ->
   m r
 withTx db names mode f = do
-  tx <- Tx<$> (JsVal <$> (db # "transaction" $ (names, mode))) <*> newEmptyMVar <*> newEmptyMVar
-  tx' <- f tx
-  readMVar tx'.mRes
+  r <- reqOfJSVal =<< (db # "transaction" $ (names, mode))
+  -- need catch
+  mv <- newEmptyMVar
+  f (Tx r mv) >>= await
 
-setCb :: forall name s pending rest m r t.
-  ( PromiseM m
-  , KnownSymbol name
-  , Elem name pending ~ 'True
-  , Drop name pending ~ rest
-  )
-  => Tx s pending r t -> (JSVal -> m ()) -> m (Tx s rest r t)
-setCb tx f = do
-  tx' <- setCallback1 @name tx.tx f
-  -- setField tx.tx (ms $ symbolVal @name Proxy) =<< mkAsyncCallback1 f
-  pure $ Tx tx' tx.mFinished tx.mRes
+data EmtpyMVarException = EmtpyMVarException deriving (Show, Eq)
+instance Exception EmtpyMVarException
 
-onTransactionX :: forall x s pending rest m r t.
+onTransactionX ::
+  forall x pending rest ->
+  KnownSymbol x => forall s m r t.
   ( PromiseM m
-  , KnownSymbol x
-  , Elem x pending ~ 'True
-  , Drop x pending ~ rest
+  , ElemDrop x pending rest
   ) =>
-  (JSVal -> m ()) ->
+  (JSVal -> r -> m r) ->
   Tx s pending r t ->
   m (Tx s rest r t)
-onTransactionX cb tx =
-  setCb @x tx $ \a -> do
-    finally (cb a) (putMVar tx.mFinished ())
+onTransactionX x pending rest cb tx = do
+  a <- resolveOn x pending rest go tx.tx
+  pure $ Tx a tx.finishedWith
+  where
+    go j = do
+      tryReadMVar tx.finishedWith >>= \case
+        Nothing -> throwIO EmtpyMVarException
+        Just r -> cb j r
 
-type OnTransX x s pending rest m r txState  =
+type OnTransX x pending rest =
+  forall s m r txState.
   ( PromiseM m
-  , Elem x pending ~ 'True
-  , Drop x pending ~ rest
+  , ElemDrop x pending rest
   ) =>
-  (JSVal -> m ()) ->
+  (JSVal -> r -> m r) ->
   Tx s pending r txState ->
   m (Tx s rest r txState)
 
-onTxComplete ::
-  forall x s pending rest m r t. (x ~ OnComplete) => OnTransX x s pending rest m r t
-onTxComplete = onTransactionX @x
+onTxComplete :: forall x pending rest -> (x ~ OnComplete) => OnTransX x pending rest
+onTxComplete x pending rest = onTransactionX x pending rest
 
-onTxError ::
-  forall x s pending rest m r t. (x ~ OnError) => OnTransX x s pending rest m r t
-onTxError = onTransactionX @x
+onTxError :: forall x pending rest -> (x ~ OnError) => OnTransX x pending rest
+onTxError x pending rest = onTransactionX x pending rest
 
-onTxAbort ::
-  forall x s pending rest m r t. (x ~ OnAbort) => OnTransX x s pending rest m r t
-onTxAbort = onTransactionX @x
+onTxAbort :: forall x pending rest -> (x ~ OnAbort) => OnTransX x pending rest
+onTxAbort x pending rest = onTransactionX x pending rest

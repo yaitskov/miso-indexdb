@@ -11,10 +11,11 @@ module UnliftIO.Miso
   , setField
   , fromJSVal
   , fromJSValUnchecked
+  , consoleLog
   ) where
 
 import Control.Monad.IO.Class
-import Miso hiding ((#), (!), jsg, setField, fromJSVal, fromJSValUnchecked, new, apply, await)
+import Miso hiding ((#), (!), jsg, setField, fromJSVal, fromJSValUnchecked, new, apply, await, go, consoleLog)
 import Miso qualified as M
 import Miso.DSL qualified as MDSL
 import Prelude
@@ -49,3 +50,6 @@ fromJSVal = liftF M.fromJSVal
 
 fromJSValUnchecked :: (FromJSVal a, MonadIO m) => JSVal -> m a
 fromJSValUnchecked = liftF M.fromJSValUnchecked
+
+consoleLog :: MonadIO m => MisoString -> m ()
+consoleLog = liftF M.consoleLog

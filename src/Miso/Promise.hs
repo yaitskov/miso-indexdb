@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE FunctionalDependencies #-}
 module Miso.Promise
   ( module Miso.Promise
   , module UnliftIO.Miso
@@ -50,5 +51,13 @@ newPromise f2 = do
   executor <- mkAsyncCallback2 f2
   Promise <$> ((`new` [executor]) =<< jsg "Promise")
 
-await :: PromiseM m => Promise -> m JSVal
-await (Promise p) = liftIO $ M.await p
+class Awaitable t a | t -> a where
+  await :: MonadIO m => t -> m a
+
+instance Awaitable Promise JSVal where
+  await :: MonadIO m => Promise -> m JSVal
+  await (Promise p) = liftIO $ M.await p
+
+instance Awaitable JSVal JSVal where
+  await :: MonadIO m => JSVal -> m JSVal
+  await j = liftIO $ M.await j
