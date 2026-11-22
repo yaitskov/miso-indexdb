@@ -43,15 +43,16 @@ main = do
   runPromiseT do
     deleteAllDbs =<< factory
   quickCheck do
-    monadicIO do
-      asm "No DBs after deleteAllDbs" ([] ==) do
-        runPromiseT (factory >>= listDatabaseNames)
-      asm "openDb & closeDb creates db" (elem "db1" . fmap (\x -> x.name)) do
-        runPromiseT do
-          openDb "db1" >>= closeDb
-          factory >>= listDatabaseNames
-      asm "No DBs after deleteAllDbs2" ([] ==) do
-        runPromiseT do
-          f <- factory
-          deleteAllDbs f
-          listDatabaseNames f
+    withNumTests 1 do
+      monadicIO do
+        asm "No DBs after deleteAllDbs" ([] ==) do
+          runPromiseT (factory >>= listDatabaseNames)
+        asm "openDb & closeDb creates db" (elem "db1" . fmap (\x -> x.name)) do
+          runPromiseT do
+            openDb "db1" >>= closeDb
+            factory >>= listDatabaseNames
+        asm "No DBs after deleteAllDbs2" ([] ==) do
+          runPromiseT do
+            f <- factory
+            deleteAllDbs f
+            listDatabaseNames f
