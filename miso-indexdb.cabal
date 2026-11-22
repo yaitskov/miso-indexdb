@@ -136,7 +136,7 @@ common test-base
     miso,
     miso-indexdb,
     hspec >= 2.11,
-    QuickCheck >= 2.15.0.1,
+    QuickCheck >= 2.18.0.1,
   default-language: GHC2024
   ghc-options:
     -Wall

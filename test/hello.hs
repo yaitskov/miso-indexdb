@@ -41,7 +41,7 @@ asm msg p mv = (liftIO mv) >>= \v -> assertWith (p v) msg
 isolationTest :: IO ()
 isolationTest =
   quickCheck do
-    withMaxSuccess 1 do
+    withNumTests 1 do
       monadicIO do
         asm "No DBs after deleteAllDbs" ([] ==) do
           runPromiseT do
