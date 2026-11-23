@@ -5,6 +5,7 @@ import Control.Monad.IO.Class
 import Data.List
 import Demo
 import Miso.IndexDb
+import OrphanInstances ()
 import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
@@ -28,9 +29,9 @@ deleteAllDbs idb = do
   dbNames <- listDatabaseNames idb
   consoleLog $ "DB found: " <> ms (show (length dbNames))
   forM_ dbNames $ \dbi -> do
-    consoleLog $ "Deleting DB " <> dbi.name
+    consoleLog $ "Deleting DB " <> unDbName dbi.name
     () <- await =<< deleteDatabase idb dbi.name
-    consoleLog $ "DB " <> dbi.name <> " has been deleted"
+    consoleLog $ "DB " <> unDbName dbi.name <> " has been deleted"
 
 asm :: MonadIO m => String -> (t -> Bool) -> IO t -> PropertyM m ()
 asm msg p mv = (liftIO mv) >>= \v -> assertWith (p v) msg
@@ -59,19 +60,23 @@ parallelTests = hspec do
   describe "IndexDb parallel" do
     describe "Factory" do
       it "openDb creates db if missing" do
-          property $ \(dbName':: String) -> do
-            dbName' /= []  ==> idempotentIOProperty do
-              let dbName = ms dbName'
+          property $ \(dbName :: DbName) ->
+            idempotentIOProperty do
               runCbT do
                 f <- factory
                 existingDbs <- fmap (\x -> x.name) <$> listDatabaseNames f
                 if dbName `elem` existingDbs then
-                  pure $ pendingWith $ "DB name collision " <> dbName'
+                  pure $ pendingWith $
+                    "DB name collision " <> fromMisoString (unDbName dbName)
                 else do
-                  closeDb =<< openDb (dbName)
+                  closeDb =<< openDb dbName
                   dbNames <- fmap (\x -> x.name) <$> listDatabaseNames f
                   () <- await =<< deleteDatabase f dbName
                   pure $ dbNames `shouldContain` [dbName]
+    -- describe "DB" do
+    --   it "getDbName returns DB name" do
+    --     propert $ \(dbName' :: String) -> do
+
 
 main :: IO ()
 main = do

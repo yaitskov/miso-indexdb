@@ -1,6 +1,7 @@
 module Miso.IndexDb.Factory where
 
 import Miso.IndexDb.Cb
+import Miso.IndexDb.DbName (DbName)
 import Miso.IndexDb.JsVal (Awaitable(..))
 import Miso.IndexDb.Prelude
 
@@ -12,7 +13,7 @@ factory = Factory <$> jsg "indexedDB"
 
 data DatabaseInfo
   = DatabaseInfo
-  { name :: MisoString
+  { name :: DbName
   , version :: Int
   } deriving (Show, Eq, Generic)
 

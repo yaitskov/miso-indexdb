@@ -21,18 +21,21 @@ storeName = "blobs"
 openDb :: CbM m => DbName -> m Database
 openDb dbName = do -- runCbT do
   f <- factory
-  consoleLog $ "Open DB " <> dbName
+  consoleLog $ "Open DB " <> unDbName dbName
   await
-    =<< resolveOn OnError _ _ (\_er -> throwIO . JsEx  $ "Failed to open DB " <> dbName)
+    =<< resolveOn OnError _ _ (\_er -> throwIO . JsEx  $
+      "Failed to open DB " <> unDbName dbName)
     =<< resolveOn OnSuccess _ _ (\ev -> Database <$> eventResult ev )
-    =<< resolveOn OnBlocked _ _ (\_er -> throwIO . JsEx  $ "DB " <> dbName <> " is blocked")
-    =<< setCallback1 OnUpgradeNeeded _ _ (\ev -> upgradeStore . Database =<< eventResult ev)
+    =<< resolveOn OnBlocked _ _ (\_er -> throwIO . JsEx  $
+      "DB " <> unDbName dbName <> " is blocked")
+    =<< setCallback1 OnUpgradeNeeded _ _ (\ev ->
+      upgradeStore . Database =<< eventResult ev)
     =<< IDB.open f dbName (Just 1)
 
 upgradeStore :: CbM m => Database -> m ()
 upgradeStore db = do
   dbn <- getDbName db
-  consoleLog $ "Upgrade schema of " <> dbn
+  consoleLog $ "Upgrade schema of " <> unDbName dbn
   storeExists <- hasObjectStore db storeName
   consoleLog $ "Store " <> storeName <> " exists: " <>  ms (show storeExists)
   -- unless storeExists do

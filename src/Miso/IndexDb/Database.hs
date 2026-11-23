@@ -1,12 +1,12 @@
 module Miso.IndexDb.Database where
 
 import Miso.IndexDb.Cb
+import Miso.IndexDb.DbName (DbName(..))
 import Miso.IndexDb.Factory
 import Miso.IndexDb.Prelude
 import Miso.IndexDb.Request
 
 
-type DbName = MisoString
 type OnBlocked = "onblocked"
 type OnUpgradeNeeded = "onupgradeneeded"
 type OpenCallbacks = '[OnUpgradeNeeded, OnBlocked, OnSuccess, OnError]
@@ -35,11 +35,15 @@ deleteDatabase ::
   DbName ->
   m (Request () '[])
 deleteDatabase (Factory f) name = do
-  raw :: Request () DeleteCallbacks <- reqOfJSVal =<< (f # "deleteDatabase" $ name)
+  raw :: Request () DeleteCallbacks <- reqOfJSVal =<<
+    (f # "deleteDatabase" $ [name])
 
-  resolveOn OnBlocked _ _ (\_ -> throwIO . JsEx $ "Delete DB " <> name <> " is blocked") =<<
-    resolveOn OnError _ _ (\_ -> throwIO . JsEx $ "Delete DB " <> name <> " failed") =<<
-      resolveOn OnSuccess _ _ (\_ -> consoleLog $ "DB " <> name <> " deleted") raw
+  resolveOn OnBlocked _ _ (\_ -> throwIO . JsEx $
+    "Delete DB " <> unDbName name <> " is blocked") =<<
+    resolveOn OnError _ _ (\_ -> throwIO . JsEx $
+      "Delete DB " <> unDbName name <> " failed") =<<
+      resolveOn OnSuccess _ _ (\_ -> consoleLog $
+        "DB " <> unDbName name <> " deleted") raw
 
 objectStoreNames :: CbM m => Database -> m [MisoString]
 objectStoreNames (Database db) = fromJSValUnchecked =<< (db ! "objectStoreNames")
@@ -52,8 +56,8 @@ hasObjectStore (Database db) name = do
 closeDb :: MonadIO m => Database -> m ()
 closeDb (Database db) = void $ db # "close" $ ()
 
-getDbName :: MonadIO m => Database -> m MisoString
-getDbName (Database db) = fromJSValUnchecked =<< (db ! "name")
+getDbName :: MonadIO m => Database -> m DbName
+getDbName (Database db) = DbName <$> (fromJSValUnchecked =<< (db ! "name"))
 
 dbVersion :: MonadIO m => Database -> m Int
 dbVersion (Database db) = fromJSValUnchecked =<< (db ! "version")

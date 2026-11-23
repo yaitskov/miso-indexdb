@@ -1,4 +1,9 @@
-module Miso.IndexDb (module X, Awaitable(..), HasCallbacks(..)) where
+module Miso.IndexDb
+  ( module X
+  , Awaitable(..)
+  , DbName(..)
+  , HasCallbacks(..)
+  ) where
 
 -- import Miso.IndexDb.Cursor
 -- import Miso.IndexDb.Index
@@ -7,6 +12,7 @@ module Miso.IndexDb (module X, Awaitable(..), HasCallbacks(..)) where
 -- import Miso.IndexDb.ObjectStore
 -- import Miso.IndexDb.Prelude
 import Miso.IndexDb.Database as X
+import Miso.IndexDb.DbName (DbName(..))
 import Miso.IndexDb.Factory as X
 import Miso.IndexDb.JsVal (Awaitable(..), HasCallbacks(..))
 import Miso.IndexDb.Request as X

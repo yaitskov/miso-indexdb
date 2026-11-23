@@ -124,6 +124,7 @@ library
     Miso.IndexDb.Request
     Miso.IndexDb.List
     Miso.IndexDb.Database
+    Miso.IndexDb.DbName
     Miso.IndexDb.Factory
   build-depends:
     , miso               >= 1.15
@@ -164,5 +165,6 @@ test-suite browser
   hs-source-dirs: test
   other-modules:
     Demo
+    OrphanInstances
   type: exitcode-stdio-1.0
   main-is: hello.hs
