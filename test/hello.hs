@@ -54,32 +54,24 @@ isolationTest =
             deleteAllDbs f
             listDatabaseNames f
 
--- foo :: MisoString -> IO Expectation
--- foo dbName = runCbT do
---   -- pure $ dbName `shouldBe` "e"
---   closeDb =<< openDb (dbName)
---   f <- factory
---   dbNames <- fmap (\x -> x.name) <$> listDatabaseNames f
---   () <- await =<< deleteDatabase f dbName
---   pure $ dbNames `shouldContain` [dbName]
-
 parallelTests :: IO ()
 parallelTests = hspec do
   describe "IndexDb parallel" do
-    it "openDb creates db if missing" do
-        property $ \(dbName':: String) -> do
-          dbName' /= []  ==> idempotentIOProperty do
-            let dbName = ms dbName'
-            runCbT do
-              f <- factory
-              existingDbs <- fmap (\x -> x.name) <$> listDatabaseNames f
-              if dbName `elem` existingDbs then
-                pure $ pendingWith $ "DB name collision " <> dbName'
-              else do
-                closeDb =<< openDb (dbName)
-                dbNames <- fmap (\x -> x.name) <$> listDatabaseNames f
-                () <- await =<< deleteDatabase f dbName
-                pure $ dbNames `shouldContain` [dbName]
+    describe "Factory" do
+      it "openDb creates db if missing" do
+          property $ \(dbName':: String) -> do
+            dbName' /= []  ==> idempotentIOProperty do
+              let dbName = ms dbName'
+              runCbT do
+                f <- factory
+                existingDbs <- fmap (\x -> x.name) <$> listDatabaseNames f
+                if dbName `elem` existingDbs then
+                  pure $ pendingWith $ "DB name collision " <> dbName'
+                else do
+                  closeDb =<< openDb (dbName)
+                  dbNames <- fmap (\x -> x.name) <$> listDatabaseNames f
+                  () <- await =<< deleteDatabase f dbName
+                  pure $ dbNames `shouldContain` [dbName]
 
 main :: IO ()
 main = do
