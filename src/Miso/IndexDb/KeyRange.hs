@@ -6,8 +6,8 @@ module Miso.IndexDb.KeyRange
   , boundRange
   ) where
 
+import Miso.Cb
 import Miso.IndexDb.Prelude
-import Miso.Promise
 
 newtype KeyRange = KeyRange JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)

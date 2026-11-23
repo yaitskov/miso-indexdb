@@ -2,10 +2,10 @@
 module Miso.IndexDb.ObjectStore where
 
 
+import Miso.Cb hiding (get, put, errorMessage)
 import Miso.IndexDb.Prelude
 -- import Miso.IndexDb.Tx
 -- import Miso.JSON (jsonStringify)
-import Miso.Promise hiding (get, put, errorMessage)
 -- import System.IO.Unsafe (unsafePerformIO)
 
 newtype DbReq (pending :: [Symbol]) r = DbReq { unDbReq :: JSVal }
@@ -15,7 +15,7 @@ newtype DbReq (pending :: [Symbol]) r = DbReq { unDbReq :: JSVal }
 -- newDbReq = DbReq
 
 -- setCb :: forall name pending rest m r.
---   ( PromiseM m
+--   ( CbM m
 --   , KnownSymbol name
 --   , Elem name pending ~ 'True
 --   , Drop name pending ~ rest
@@ -32,7 +32,7 @@ newtype DbReq (pending :: [Symbol]) r = DbReq { unDbReq :: JSVal }
 
 -- instance Exception IndexDbException
 
--- resolveReq :: (FromJSVal r, PromiseM m) => NewDbReq r -> m r
+-- resolveReq :: (FromJSVal r, CbM m) => NewDbReq r -> m r
 -- resolveReq r = do
 --   x  :: MVar (Either JSVal JSVal) <- newEmptyMVar
 --   r' <- setCb @OnSuccess r $ \_ -> putMVar x . Right =<< r.unDbReq ! "result"
@@ -76,36 +76,36 @@ newtype DbReq (pending :: [Symbol]) r = DbReq { unDbReq :: JSVal }
 --   m (DataObjectStore s)
 -- objectStore tx name = ObjectStore <$> (tx.tx # "objectStore" $ name)
 
--- put :: (PromiseM m, ToJSVal k, ToJSVal v) =>
+-- put :: (CbM m, ToJSVal k, ToJSVal v) =>
 --   DataObjectStore s -> v -> Maybe k -> m (NewDbReq JSVal)
 -- put (ObjectStore os) v mk = newDbReq <$> (os # "put" $ (v, mk))
 
--- add :: (PromiseM m, ToJSVal k, ToJSVal v) =>
+-- add :: (CbM m, ToJSVal k, ToJSVal v) =>
 --   DataObjectStore s -> v -> Maybe k -> m (NewDbReq JSVal)
 -- add (ObjectStore os) v mk =newDbReq <$> (os # "add" $ (v, mk))
 
--- get :: forall a k m s. (PromiseM m, ToArgs k, FromJSVal a)
+-- get :: forall a k m s. (CbM m, ToArgs k, FromJSVal a)
 --    => DataObjectStore s -> k -> m a
 -- get (ObjectStore os) k =
 --   resolveReq . newDbReq =<< (os # "get" $ k)
 
--- getAll :: forall q m s. (PromiseM m, ToJSVal q) =>
+-- getAll :: forall q m s. (CbM m, ToJSVal q) =>
 --   DataObjectStore s -> Maybe q -> Maybe Int -> m (NewDbReq [JSVal])
 -- getAll (ObjectStore os) q cnt = newDbReq <$> (os # "getAll" $ (q, cnt))
 
--- getAllKeys :: (PromiseM m, ToArgs q) =>
+-- getAllKeys :: (CbM m, ToArgs q) =>
 --   DataObjectStore s ->
 --   Maybe q ->
 --   m (NewDbReq [JSVal])
 -- getAllKeys (ObjectStore os) q = newDbReq <$> (os # "getAllKeys" $ q)
 
--- delete :: (PromiseM m, ToArgs k) => DataObjectStore s -> k -> m (NewDbReq ())
+-- delete :: (CbM m, ToArgs k) => DataObjectStore s -> k -> m (NewDbReq ())
 -- delete (ObjectStore os) k = DbReq <$> (os # "delete" $ k)
 
--- clear :: PromiseM m => DataObjectStore s -> m (NewDbReq ())
+-- clear :: CbM m => DataObjectStore s -> m (NewDbReq ())
 -- clear (ObjectStore os) = DbReq <$> (os # "clear" $ ())
 
--- count :: (PromiseM m, ToArgs q) =>
+-- count :: (CbM m, ToArgs q) =>
 --   DataObjectStore s ->
 --   Maybe q -> m Int
 -- count (ObjectStore os) q =

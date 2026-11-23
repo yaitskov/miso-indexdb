@@ -35,7 +35,7 @@ description:
     > import Miso.IndexDb qualified as IDB
     >
     > openDb :: IO IDB.Database
-    > openDb = runPromiseT do
+    > openDb = runCbT do
     >   f <- IDB.factory
     >   req <- IDB.open f "blob" (Just 1)
     >   upgraded <- IDB.onUpgradeNeeded upgradeStore req
@@ -44,7 +44,7 @@ description:
     >   done <- IDB.onError success
     >   IDB.result done
     >
-    > upgradeStore :: PromiseM m => IDB.Database -> m ()
+    > upgradeStore :: CbM m => IDB.Database -> m ()
     > upgradeStore db = do
     >   storeExists <- IDB.hasObjectStore db "blobs"
     >   unless storeExists do
@@ -73,7 +73,7 @@ license-file:  LICENSE
 author:        Daniil Iaitskov
 maintainer:    dyaitskov@gmail.com
 copyright:     Daniil Iaitkov 2026
-category:      Miso, Promise, Async
+category:      Miso, Callback, Async
 build-type:    Simple
 bug-reports:   https://github.com/yaitskov/miso-indexdb/issues
 extra-doc-files:
@@ -114,7 +114,7 @@ library
     Miso.IndexDb.KeyRange
     Miso.IndexDb.ObjectStore
     Miso.IndexDb.Tx
-    Miso.Promise
+    Miso.Cb
     Miso.Promise.Demo
     UnliftIO.Miso
   other-modules:

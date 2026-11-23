@@ -11,13 +11,13 @@ import Miso.IndexDb.Factory as X
 import Miso.IndexDb.JsVal (Awaitable(..))
 import Miso.IndexDb.Request as X
 -- import Miso.IndexDb.Tx
--- import Miso.Promise hiding (get, put, errorMessage)
+-- import Miso.Cb hiding (get, put, errorMessage)
 
--- result :: (PromiseM m, FromJSVal a) => Request '[] a -> m a
+-- result :: (CbM m, FromJSVal a) => Request '[] a -> m a
 -- result (Typed _ (RequestCore p _ _)) = fromJSValUnchecked =<< await p
 
 -- onSuccess :: forall pending rest a m.
---   ( PromiseM m
+--   ( CbM m
 --   , Elem "onsuccess" pending ~ 'True
 --   , Drop "onsuccess" pending ~ rest
 --   )
@@ -25,7 +25,7 @@ import Miso.IndexDb.Request as X
 -- onSuccess = onSuccessWith (\_ -> pure ())
 
 -- onSuccessWith :: forall pending rest a m.
---   ( PromiseM m
+--   ( CbM m
 --   , Elem "onsuccess" pending ~ 'True
 --   , Drop "onsuccess" pending ~ rest
 --   )
@@ -37,7 +37,7 @@ import Miso.IndexDb.Request as X
 --     resolveReq' core v
 
 -- onError :: forall pending rest a m.
---   ( PromiseM m
+--   ( CbM m
 --   , Elem "onerror" pending ~ 'True
 --   , Drop "onerror" pending ~ rest
 --   )
@@ -45,7 +45,7 @@ import Miso.IndexDb.Request as X
 -- onError = onErrorWith (\_ -> pure ())
 
 -- onErrorWith :: forall pending rest a m.
---   ( PromiseM m
+--   ( CbM m
 --   , Elem "onerror" pending ~ 'True
 --   , Drop "onerror" pending ~ rest
 --   )
@@ -57,7 +57,7 @@ import Miso.IndexDb.Request as X
 --     rejectReq core (unDbError err)
 
 -- onUpgradeNeeded :: forall pending rest a m.
---   ( PromiseM m
+--   ( CbM m
 --   , Elem "onupgradeneeded" pending ~ 'True
 --   , Drop "onupgradeneeded" pending ~ rest
 --   )
@@ -68,7 +68,7 @@ import Miso.IndexDb.Request as X
 --     cb (Database v)
 
 -- onBlocked :: forall pending rest a m.
---   ( PromiseM m
+--   ( CbM m
 --   , Elem "onblocked" pending ~ 'True
 --   , Drop "onblocked" pending ~ rest
 --   )

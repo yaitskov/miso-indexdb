@@ -1,8 +1,8 @@
 module Miso.IndexDb.Factory where
 
+import Miso.Cb
 import Miso.IndexDb.JsVal (Awaitable(..))
 import Miso.IndexDb.Prelude
-import Miso.Promise
 
 newtype Factory = Factory JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
@@ -18,7 +18,7 @@ data DatabaseInfo
 
 instance FromJSVal DatabaseInfo
 
-listDatabaseNames :: (PromiseM m) => Factory -> m [DatabaseInfo]
+listDatabaseNames :: (CbM m) => Factory -> m [DatabaseInfo]
 listDatabaseNames (Factory f) = do
   p <- f # "databases" $ ()
   fromJSValUnchecked =<< await p

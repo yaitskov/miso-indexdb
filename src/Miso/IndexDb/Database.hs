@@ -1,9 +1,9 @@
 module Miso.IndexDb.Database where
 
+import Miso.Cb
 import Miso.IndexDb.Factory
 import Miso.IndexDb.Prelude
 import Miso.IndexDb.Request
-import Miso.Promise
 
 
 type DbName = MisoString
@@ -21,7 +21,7 @@ newtype JsEx = JsEx { message :: MisoString } deriving (Show, Eq)
 instance Exception JsEx
 
 open ::
-  PromiseM m =>
+  CbM m =>
   Factory ->
   DbName ->
   Maybe Int ->
@@ -30,7 +30,7 @@ open (Factory f) name ver =
   reqOfJSVal =<< (f # "open" $ (name, ver))
 
 deleteDatabase ::
-  PromiseM m =>
+  CbM m =>
   Factory ->
   DbName ->
   m (Request () '[])
@@ -41,10 +41,10 @@ deleteDatabase (Factory f) name = do
     resolveOn OnError _ _ (\_ -> throwIO . JsEx $ "Delete DB " <> name <> " failed") =<<
       resolveOn OnSuccess _ _ (\_ -> consoleLog $ "DB " <> name <> " deleted") raw
 
-objectStoreNames :: PromiseM m => Database -> m [MisoString]
+objectStoreNames :: CbM m => Database -> m [MisoString]
 objectStoreNames (Database db) = fromJSValUnchecked =<< (db ! "objectStoreNames")
 
-hasObjectStore :: PromiseM m => Database -> MisoString -> m Bool
+hasObjectStore :: CbM m => Database -> MisoString -> m Bool
 hasObjectStore (Database db) name = do
   names <- db ! "objectStoreNames"
   fromJSValUnchecked =<< (names # "contains" $ name)

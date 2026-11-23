@@ -15,10 +15,10 @@ module Miso.IndexDb.Tx
   ) where
 
 import GHC.Generics
+import Miso.Cb
 import Miso.IndexDb.Database
 import Miso.IndexDb.JsVal
 import Miso.IndexDb.Prelude
-import Miso.Promise
 import Miso.IndexDb.Request
 -- import Miso.IndexDb.List
 
@@ -83,7 +83,7 @@ instance (TxIsComplete tsx ~ 'True) => Awaitable (Tx s '[] r tsx) r where
   await tx = await tx.tx
 
 withTx :: forall r m tsx.
-  (TxIsComplete tsx ~ 'True, PromiseM m) =>
+  (TxIsComplete tsx ~ 'True, CbM m) =>
   Database ->
   [MisoString] ->
   TxMode ->
@@ -101,7 +101,7 @@ instance Exception EmtpyMVarException
 onTransactionX ::
   forall x pending rest ->
   KnownSymbol x => forall s m r t.
-  ( PromiseM m
+  ( CbM m
   , ElemDrop x pending rest
   ) =>
   (JSVal -> r -> m r) ->
@@ -118,7 +118,7 @@ onTransactionX x pending rest cb tx = do
 
 type OnTransX x pending rest =
   forall s m r txState.
-  ( PromiseM m
+  ( CbM m
   , ElemDrop x pending rest
   ) =>
   (JSVal -> r -> m r) ->

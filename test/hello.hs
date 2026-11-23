@@ -3,15 +3,15 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 module Main where
 
-import Data.List
-import Miso.IndexDb
-import Miso.Promise
 import Control.Monad
+import Control.Monad.IO.Class
+import Data.List
+import Miso.Cb
+import Miso.IndexDb
 import Miso.Promise.Demo
 import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
-import Control.Monad.IO.Class
 
 old_main :: IO ()
 old_main = do
@@ -27,7 +27,7 @@ old_main = do
   putStrLn $ "Databases: " <> intercalate ", " dbs
 
 
-deleteAllDbs :: PromiseM m => Factory -> m ()
+deleteAllDbs :: CbM m => Factory -> m ()
 deleteAllDbs idb = do
   dbNames <- listDatabaseNames idb
   consoleLog $ "DB found: " <> ms (show (length dbNames))
@@ -45,21 +45,21 @@ isolationTest =
     withNumTests 1 do
       monadicIO do
         asm "No DBs after deleteAllDbs" ([] ==) do
-          runPromiseT do
+          runCbT do
             deleteAllDbs =<< factory
             factory >>= listDatabaseNames
         asm "openDb & closeDb creates db" (elem "db1" . fmap (\x -> x.name)) do
-          runPromiseT do
+          runCbT do
             openDb "db1" >>= closeDb
             factory >>= listDatabaseNames
         asm "No DBs after deleteAllDbs2" ([] ==) do
-          runPromiseT do
+          runCbT do
             f <- factory
             deleteAllDbs f
             listDatabaseNames f
 
 -- foo :: MisoString -> IO Expectation
--- foo dbName = runPromiseT do
+-- foo dbName = runCbT do
 --   -- pure $ dbName `shouldBe` "e"
 --   closeDb =<< openDb (dbName)
 --   f <- factory
@@ -74,7 +74,7 @@ parallelTests = hspec do
         property $ \(dbName':: String) ->
           dbName' /= [] ==> idempotentIOProperty do
             let dbName = ms dbName'
-            runPromiseT do
+            runCbT do
               closeDb =<< openDb (dbName)
               f <- factory
               dbNames <- fmap (\x -> x.name) <$> listDatabaseNames f

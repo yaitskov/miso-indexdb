@@ -2,11 +2,10 @@
 
 module Miso.IndexDb.Request where
 
+import Miso.Cb (CbM, JSVal, ToObject(..))
 import Miso.IndexDb.JsVal
     ( Awaitable(..), ElemDrop, HasCallbacks(..), HasCallbacks1Con, JsVal(JsVal) )
 import Miso.IndexDb.Prelude
-import Miso.Promise
-    ( JSVal, ToObject(..), PromiseM )
 
 type OnSuccess = "onsuccess"
 type OnError = "onerror"
@@ -22,7 +21,7 @@ data Request r (unsetCbs :: [Symbol])
 instance ToObject (Request r ucbs) where
   toObject r = toObject r.requestVal
 
-reqOfJSVal :: PromiseM m => JSVal -> m (Request r ucbs)
+reqOfJSVal :: CbM m => JSVal -> m (Request r ucbs)
 reqOfJSVal j = Request (JsVal j) <$> newEmptyMVar
 
 instance HasCallbacks (Request r) where
@@ -35,7 +34,7 @@ instance HasCallbacks (Request r) where
     pure r { requestVal = rv' }
 
 resolveOn ::
-  forall m r. PromiseM m =>
+  forall m r. CbM m =>
   forall name ucbs ucbs' ->
   KnownSymbol name =>
   ElemDrop name ucbs ucbs' =>
@@ -50,7 +49,7 @@ resolveOn name ucbs ucbs' cb r = do
       tryAny (cb cba) >>= \case
         Left e -> putMVar r.requestMVar $ ReqEx e
         Right a -> putMVar r.requestMVar $ ReqResolved a
--- resolveWith :: PromiseM m => Request r ucbs -> r -> m ()
+-- resolveWith :: CbM m => Request r ucbs -> r -> m ()
 -- resolveWith req = putMVar req.requestMVar . ReqResolved
 
 instance Awaitable (Request r '[]) r where

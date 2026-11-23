@@ -1,18 +1,18 @@
 {-# LANGUAGE BlockArguments #-}
 module Miso.Promise.Demo where
 
+import Miso.Cb
 import Miso.IndexDb as IDB
-import Miso.IndexDb.Prelude
-import Miso.Promise
 -- import Miso.IndexDb.Request
 import Miso.IndexDb.JsVal
+import Miso.IndexDb.Prelude
 
-eventResult :: PromiseM m => JSVal -> m JSVal
+eventResult :: CbM m => JSVal -> m JSVal
 eventResult ev = do
   target <- ev ! "target"
   target ! "result"
 
--- eventError :: PromiseM m => JSVal -> m JSVal
+-- eventError :: CbM m => JSVal -> m JSVal
 -- eventError ev = do
 --   target <- ev ! "target"
 --   target ! "error"
@@ -21,8 +21,8 @@ storeName :: MisoString
 storeName = "blobs"
 
 -- openDb :: IO Database
-openDb :: PromiseM m => DbName -> m Database
-openDb dbName = do -- runPromiseT do
+openDb :: CbM m => DbName -> m Database
+openDb dbName = do -- runCbT do
   f <- factory
   consoleLog $ "Open DB " <> dbName
   await
@@ -32,7 +32,7 @@ openDb dbName = do -- runPromiseT do
     =<< setCallback1 OnUpgradeNeeded _ _ (\ev -> upgradeStore . Database =<< eventResult ev)
     =<< IDB.open f dbName (Just 1)
 
-upgradeStore :: PromiseM m => Database -> m ()
+upgradeStore :: CbM m => Database -> m ()
 upgradeStore db = do
   dbn <- getDbName db
   consoleLog $ "Upgrade schema of " <> dbn
@@ -42,8 +42,8 @@ upgradeStore db = do
   --   void $ createObjectStore db storeName (StoreOptions Nothing True)
   -- pure db
 
-withDatabase :: DbName -> (Database -> PromiseT IO a) -> IO a
-withDatabase dbName f = runPromiseT (bracket (openDb dbName) closeDb f)
+withDatabase :: DbName -> (Database -> CbT IO a) -> IO a
+withDatabase dbName f = runCbT (bracket (openDb dbName) closeDb f)
 
 -- remove :: MisoString -> MisoString -> IO ()
 -- remove store key = withDatabase \db ->

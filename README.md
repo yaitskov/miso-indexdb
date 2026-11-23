@@ -29,7 +29,7 @@ function openDatabase() {
 import Miso.IndexDb qualified as IDB
 
 openDb :: IO IDB.Database
-openDb = runPromiseT do
+openDb = runCbT do
   f <- IDB.factory
   req <- IDB.open f "blob" (Just 1)
   upgraded <- IDB.onUpgradeNeeded upgradeStore req
@@ -38,7 +38,7 @@ openDb = runPromiseT do
   done <- IDB.onError success
   IDB.result done
 
-upgradeStore :: PromiseM m => IDB.Database -> m ()
+upgradeStore :: CbM m => IDB.Database -> m ()
 upgradeStore db = do
   storeExists <- IDB.hasObjectStore db "blobs"
   unless storeExists do

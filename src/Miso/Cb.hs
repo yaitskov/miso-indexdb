@@ -1,6 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
-module Miso.Promise
-  ( module Miso.Promise
+module Miso.Cb
+  ( module Miso.Cb
   , module UnliftIO.Miso
   ) where
 
@@ -13,30 +13,30 @@ import UnliftIO.Miso
 
 
 newtype CbsToFree = CbsToFree { unCbsToFree :: MVar [Function] }
-newtype PromiseT m a = FfiT (ReaderT CbsToFree m a)
+newtype CbT m a = CbT (ReaderT CbsToFree m a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadUnliftIO, MonadReader CbsToFree)
 
-type PromiseM m = (MonadUnliftIO m, MonadReader CbsToFree m)
+type CbM m = (MonadUnliftIO m, MonadReader CbsToFree m)
 
-mkAsyncCallbackX :: PromiseM m => ((forall a. m a -> IO a) -> IO JSVal) -> m JSVal
+mkAsyncCallbackX :: CbM m => ((forall a. m a -> IO a) -> IO JSVal) -> m JSVal
 mkAsyncCallbackX f = do
   fsMv <- unCbsToFree <$> ask
-  -- FfiT do
+  -- CbT do
   fw <- withRunInIO f
   modifyMVar_ fsMv $ (pure . (Function fw :))
   pure fw
 
-mkAsyncCallback :: PromiseM m => m () -> m JSVal
+mkAsyncCallback :: CbM m => m () -> m JSVal
 mkAsyncCallback f = mkAsyncCallbackX $ \riio -> asyncCallback (riio f)
 
-mkAsyncCallback1 :: PromiseM m => (JSVal -> m ()) -> m JSVal
+mkAsyncCallback1 :: CbM m => (JSVal -> m ()) -> m JSVal
 mkAsyncCallback1 f = mkAsyncCallbackX $ \riio -> asyncCallback1 $ \x -> riio (f x)
 
-mkAsyncCallback2 :: PromiseM m => (JSVal -> JSVal -> m ()) -> m JSVal
+mkAsyncCallback2 :: CbM m => (JSVal -> JSVal -> m ()) -> m JSVal
 mkAsyncCallback2 f = mkAsyncCallbackX $ \riio -> asyncCallback2 $ \x y -> riio (f x y)
 
-runPromiseT :: MonadUnliftIO m => PromiseT m a -> m a
-runPromiseT (FfiT f) = do
+runCbT :: MonadUnliftIO m => CbT m a -> m a
+runCbT (CbT f) = do
   fsMv <- newMVar []
   finally (runReaderT f (CbsToFree fsMv)) do
     mapM_ (liftF freeFunction ) =<< readMVar fsMv

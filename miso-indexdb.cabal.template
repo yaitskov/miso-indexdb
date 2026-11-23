@@ -10,7 +10,7 @@ license-file:  LICENSE
 author:        Daniil Iaitskov
 maintainer:    dyaitskov@gmail.com
 copyright:     Daniil Iaitkov 2026
-category:      Miso, Promise, Async
+category:      Miso, Callback, Async
 build-type:    Simple
 bug-reports:   https://github.com/yaitskov/miso-indexdb/issues
 extra-doc-files:
@@ -51,7 +51,7 @@ library
     Miso.IndexDb.KeyRange
     Miso.IndexDb.ObjectStore
     Miso.IndexDb.Tx
-    Miso.Promise
+    Miso.Cb
     Miso.Promise.Demo
     UnliftIO.Miso
   other-modules:

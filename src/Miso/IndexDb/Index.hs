@@ -2,8 +2,8 @@ module Miso.IndexDb.Index where
 
 
 -- import Miso.IndexDb.ObjectStore
+import Miso.Cb
 import Miso.IndexDb.Prelude
-import Miso.Promise
 
 newtype Index (ts :: Maybe (s :: Type)) = Index JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
@@ -25,13 +25,13 @@ type DataIndex s = Index (Just s)
 -- index :: MonadIO m => DataObjectStore s -> MisoString -> m (DataIndex s)
 -- index (ObjectStore os) name = Index <$> (os # "index" $ name)
 
--- indexGet :: forall a k m s. (PromiseM m, ToArgs k, FromJSVal a)
+-- indexGet :: forall a k m s. (CbM m, ToArgs k, FromJSVal a)
 --          => DataIndex s -> k -> m (Request RequestCallbacks a)
 -- indexGet (Index ix) k = do
 --   raw <- ix # "get" $ k
 --   mkRequest raw
 
--- indexGetKey :: (PromiseM m, ToArgs k) =>
+-- indexGetKey :: (CbM m, ToArgs k) =>
 --   DataIndex s ->
 --   k ->
 --   m (Request RequestCallbacks JSVal)
@@ -41,7 +41,7 @@ type DataIndex s = Index (Just s)
 
 -- indexGetAll ::
 --   forall a q m s.
---   (PromiseM m, ToJSVal q, FromJSVal a) =>
+--   (CbM m, ToJSVal q, FromJSVal a) =>
 --   DataIndex s ->
 --   Maybe q ->
 --   Maybe Int ->
@@ -51,7 +51,7 @@ type DataIndex s = Index (Just s)
 --   raw <- ix # "getAll" $ (q, cnt)
 --   mkRequest raw
 
--- indexGetAllKeys :: (PromiseM m, ToArgs q) =>
+-- indexGetAllKeys :: (CbM m, ToArgs q) =>
 --   DataIndex s ->
 --   Maybe q ->
 --   m (Request RequestCallbacks [JSVal])
@@ -59,7 +59,7 @@ type DataIndex s = Index (Just s)
 --   raw <- ix # "getAllKeys" $ q
 --   mkRequest raw
 
--- indexCount :: (PromiseM m, ToArgs q) =>
+-- indexCount :: (CbM m, ToArgs q) =>
 --   DataIndex s ->
 --   Maybe q ->
 --   m (Request RequestCallbacks Int)

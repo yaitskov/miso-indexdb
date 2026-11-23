@@ -2,8 +2,8 @@ module Miso.IndexDb.Cursor where
 
 -- import Miso.IndexDb.Index
 -- import Miso.IndexDb.ObjectStore
+import Miso.Cb
 import Miso.IndexDb.Prelude
-import Miso.Promise
 
 newtype Cursor (s :: Type) = Cursor JSVal
   deriving newtype (FromJSVal, ToObject, ToJSVal)
@@ -16,7 +16,7 @@ instance ToJSVal Direction where
   toJSVal NextUnique = toJSVal ("nextunique" :: MisoString)
   toJSVal PreviousUnique = toJSVal ("prevunique" :: MisoString)
 
--- openCursor :: (PromiseM m, ToJSVal q) =>
+-- openCursor :: (CbM m, ToJSVal q) =>
 --   DataObjectStore s ->
 --   Maybe q ->
 --   Maybe Direction ->
@@ -24,7 +24,7 @@ instance ToJSVal Direction where
 -- openCursor (ObjectStore os) q dir =
 --   Cursor <$> (os # "openCursor" $ (q, dir))
 
--- openKeyCursor :: (PromiseM m, ToJSVal q) =>
+-- openKeyCursor :: (CbM m, ToJSVal q) =>
 --   DataObjectStore s ->
 --   Maybe q ->
 --   Maybe Direction ->
@@ -32,7 +32,7 @@ instance ToJSVal Direction where
 -- openKeyCursor (ObjectStore os) q dir =
 --   Cursor <$> (os # "openKeyCursor" $ (q, dir))
 
--- indexOpenCursor :: (PromiseM m, ToJSVal q) =>
+-- indexOpenCursor :: (CbM m, ToJSVal q) =>
 --   DataIndex s ->
 --   Maybe q ->
 --   Maybe Direction ->
@@ -40,7 +40,7 @@ instance ToJSVal Direction where
 -- indexOpenCursor (Index ix) q dir =
 --   Cursor <$> (ix # "openCursor" $ (q, dir))
 
--- indexOpenKeyCursor :: (PromiseM m, ToJSVal q) =>
+-- indexOpenKeyCursor :: (CbM m, ToJSVal q) =>
 --   DataIndex s ->
 --   Maybe q ->
 --   Maybe Direction ->
@@ -67,10 +67,10 @@ instance ToJSVal Direction where
 --                    => Cursor s -> k -> pk -> m ()
 -- continuePrimaryKey (Cursor c) k pk = void $ c # "continuePrimaryKey" $ (k, pk)
 
--- deleteCursor :: PromiseM m => Cursor s -> m ()
+-- deleteCursor :: CbM m => Cursor s -> m ()
 -- deleteCursor (Cursor c) =
 --   void $ c # "delete" $ ()
 
--- updateCursor :: (PromiseM m, ToArgs v) => Cursor s -> v -> m ()
+-- updateCursor :: (CbM m, ToArgs v) => Cursor s -> v -> m ()
 -- updateCursor (Cursor c) v =
 --   void $ c # "update" $ v
