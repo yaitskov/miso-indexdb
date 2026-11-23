@@ -3,10 +3,10 @@
 module Miso.IndexDb.Request where
 
 import Miso.IndexDb.JsVal
-    ( JsVal(JsVal), HasCallbacks(..), HasCallbacks1Con, ElemDrop )
+    ( Awaitable(..), ElemDrop, HasCallbacks(..), HasCallbacks1Con, JsVal(JsVal) )
 import Miso.IndexDb.Prelude
 import Miso.Promise
-    ( JSVal, ToObject(..), PromiseM, Awaitable(..) )
+    ( JSVal, ToObject(..), PromiseM )
 
 type OnSuccess = "onsuccess"
 type OnError = "onerror"
