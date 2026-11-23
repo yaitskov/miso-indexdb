@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 module Miso.Cb
   ( module Miso.Cb
   , module UnliftIO.Miso

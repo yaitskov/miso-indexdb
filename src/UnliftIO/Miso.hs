@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 module UnliftIO.Miso
   ( module Miso
   , liftF

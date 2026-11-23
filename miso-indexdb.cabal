@@ -96,6 +96,7 @@ common base
   default-language: GHC2024
   ghc-options: -Wall
   default-extensions:
+    BlockArguments
     DefaultSignatures
     NoImplicitPrelude
     OverloadedRecordDot
@@ -140,6 +141,10 @@ common test-base
   default-language: GHC2024
   ghc-options:
     -Wall
+  default-extensions:
+    BlockArguments
+    OverloadedRecordDot
+    OverloadedStrings
 
 test-suite test
   import: test-base

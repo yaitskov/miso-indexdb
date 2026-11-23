@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 module Main where
 
 import Control.Monad
