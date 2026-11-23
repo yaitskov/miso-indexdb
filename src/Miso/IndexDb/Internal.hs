@@ -25,7 +25,7 @@ module Miso.IndexDb.Internal
   ) where
 
 -- import Data.Coerce (coerce)
--- import Miso.Cb
+-- import Miso.IndexDb.Cb
 -- import Miso.IndexDb.JsVal
 -- import Miso.IndexDb.Prelude
 

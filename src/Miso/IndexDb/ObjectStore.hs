@@ -2,7 +2,7 @@
 module Miso.IndexDb.ObjectStore where
 
 
-import Miso.Cb hiding (get, put, errorMessage)
+import Miso.IndexDb.Cb hiding (get, put, errorMessage)
 import Miso.IndexDb.Prelude
 -- import Miso.IndexDb.Tx
 -- import Miso.JSON (jsonStringify)

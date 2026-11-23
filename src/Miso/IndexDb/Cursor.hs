@@ -2,7 +2,7 @@ module Miso.IndexDb.Cursor where
 
 -- import Miso.IndexDb.Index
 -- import Miso.IndexDb.ObjectStore
-import Miso.Cb
+import Miso.IndexDb.Cb
 import Miso.IndexDb.Prelude
 
 newtype Cursor (s :: Type) = Cursor JSVal

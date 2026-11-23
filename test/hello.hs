@@ -4,7 +4,6 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Data.List
 import Demo
-import Miso.Cb
 import Miso.IndexDb
 import Test.Hspec
 import Test.QuickCheck

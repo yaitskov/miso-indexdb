@@ -15,7 +15,7 @@ module Miso.IndexDb.Tx
   ) where
 
 import GHC.Generics
-import Miso.Cb
+import Miso.IndexDb.Cb
 import Miso.IndexDb.Database
 import Miso.IndexDb.JsVal
 import Miso.IndexDb.Prelude

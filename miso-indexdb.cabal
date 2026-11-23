@@ -110,12 +110,12 @@ library
   hs-source-dirs: src
   exposed-modules:
     Miso.IndexDb
+    Miso.IndexDb.Cb
     Miso.IndexDb.Cursor
     Miso.IndexDb.Index
     Miso.IndexDb.KeyRange
     Miso.IndexDb.ObjectStore
     Miso.IndexDb.Tx
-    Miso.Cb
     UnliftIO.Miso
   other-modules:
     Miso.IndexDb.Internal

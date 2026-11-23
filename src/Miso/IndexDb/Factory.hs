@@ -1,6 +1,6 @@
 module Miso.IndexDb.Factory where
 
-import Miso.Cb
+import Miso.IndexDb.Cb
 import Miso.IndexDb.JsVal (Awaitable(..))
 import Miso.IndexDb.Prelude
 

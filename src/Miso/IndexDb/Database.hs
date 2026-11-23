@@ -1,6 +1,6 @@
 module Miso.IndexDb.Database where
 
-import Miso.Cb
+import Miso.IndexDb.Cb
 import Miso.IndexDb.Factory
 import Miso.IndexDb.Prelude
 import Miso.IndexDb.Request

@@ -1,5 +1,5 @@
-module Miso.Cb
-  ( module Miso.Cb
+module Miso.IndexDb.Cb
+  ( module Miso.IndexDb.Cb
   , module UnliftIO.Miso
   ) where
 

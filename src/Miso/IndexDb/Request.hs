@@ -2,7 +2,7 @@
 
 module Miso.IndexDb.Request where
 
-import Miso.Cb (CbM, JSVal, ToObject(..))
+import Miso.IndexDb.Cb (CbM, JSVal, ToObject(..))
 import Miso.IndexDb.JsVal
     ( Awaitable(..), ElemDrop, HasCallbacks(..), HasCallbacks1Con, JsVal(JsVal) )
 import Miso.IndexDb.Prelude

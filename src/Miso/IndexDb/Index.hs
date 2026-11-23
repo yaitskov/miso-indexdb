@@ -2,7 +2,7 @@ module Miso.IndexDb.Index where
 
 
 -- import Miso.IndexDb.ObjectStore
-import Miso.Cb
+import Miso.IndexDb.Cb
 import Miso.IndexDb.Prelude
 
 newtype Index (ts :: Maybe (s :: Type)) = Index JSVal

@@ -6,7 +6,7 @@ module Miso.IndexDb.JsVal where
 
 import Miso hiding (await, setField)
 import Miso qualified as M
-import Miso.Cb
+import Miso.IndexDb.Cb
 import Miso.IndexDb.List
 import Miso.IndexDb.Prelude
 

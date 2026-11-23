@@ -11,7 +11,7 @@ import Miso.IndexDb.Factory as X
 import Miso.IndexDb.JsVal (Awaitable(..), HasCallbacks(..))
 import Miso.IndexDb.Request as X
 -- import Miso.IndexDb.Tx
--- import Miso.Cb hiding (get, put, errorMessage)
+import Miso.IndexDb.Cb as X
 
 -- result :: (CbM m, FromJSVal a) => Request '[] a -> m a
 -- result (Typed _ (RequestCore p _ _)) = fromJSValUnchecked =<< await p
