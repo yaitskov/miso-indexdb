@@ -1,4 +1,4 @@
-module Miso.IndexDb (module X, Awaitable(..)) where
+module Miso.IndexDb (module X, Awaitable(..), HasCallbacks(..)) where
 
 -- import Miso.IndexDb.Cursor
 -- import Miso.IndexDb.Index
@@ -8,7 +8,7 @@ module Miso.IndexDb (module X, Awaitable(..)) where
 -- import Miso.IndexDb.Prelude
 import Miso.IndexDb.Database as X
 import Miso.IndexDb.Factory as X
-import Miso.IndexDb.JsVal (Awaitable(..))
+import Miso.IndexDb.JsVal (Awaitable(..), HasCallbacks(..))
 import Miso.IndexDb.Request as X
 -- import Miso.IndexDb.Tx
 -- import Miso.Cb hiding (get, put, errorMessage)

@@ -1,11 +1,10 @@
 {-# LANGUAGE BlockArguments #-}
-module Miso.Promise.Demo where
+{-# LANGUAGE OverloadedStrings #-}
+module Demo where
 
 import Miso.Cb
 import Miso.IndexDb as IDB
--- import Miso.IndexDb.Request
-import Miso.IndexDb.JsVal
-import Miso.IndexDb.Prelude
+import UnliftIO (bracket, throwIO)
 
 eventResult :: CbM m => JSVal -> m JSVal
 eventResult ev = do

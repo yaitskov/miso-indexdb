@@ -115,7 +115,6 @@ library
     Miso.IndexDb.ObjectStore
     Miso.IndexDb.Tx
     Miso.Cb
-    Miso.Promise.Demo
     UnliftIO.Miso
   other-modules:
     Miso.IndexDb.Internal
@@ -135,6 +134,7 @@ common test-base
     base,
     miso,
     miso-indexdb,
+    unliftio,
     hspec >= 2.11,
     QuickCheck >= 2.18.0.1,
   default-language: GHC2024
@@ -157,5 +157,7 @@ test-suite browser
   build-depends:
     ghc-experimental
   hs-source-dirs: test
+  other-modules:
+    Demo
   type: exitcode-stdio-1.0
   main-is: hello.hs
