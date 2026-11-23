@@ -2,6 +2,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/1f0e61e3688e53926a1a5aa749a9a0c487dbb559"; # hls 2.15
     flake-utils.url = "github:numtide/flake-utils";
+    in-browser-cabal-test = {
+      url = "github:yaitskov/in-browser-cabal-test";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     miso = {
       url = # path:/home/dan/study/haskell/miso/miso;
         "github:dmjio/miso";
@@ -9,7 +13,7 @@
     };
     miso-flake.url = "github:dmjio/miso/1.15.0";
   };
-  outputs = inputs@{ self, nixpkgs, flake-utils, miso-flake, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-utils, miso-flake, in-browser-cabal-test, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         ghcName = "ghc914";
@@ -55,7 +59,10 @@
             '';
           };
           # profile for running tests in browser
-          wasm = miso-flake.devShells.${system}.wasm;
+          wasm = pkgs.mkShell {
+            packages = [ in-browser-cabal-test.packages.${system}.default ];
+            inputsFrom = [ miso-flake.devShells.${system}.wasm ];
+          };
         };
     });
 }

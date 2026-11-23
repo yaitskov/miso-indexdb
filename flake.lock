@@ -75,6 +75,26 @@
         "type": "gitlab"
       }
     },
+    "in-browser-cabal-test": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795464584,
+        "narHash": "sha256-hsFZtb1qNoEf/cFC1D9ip6RP2TzSylfIwOP+Ae2tf7Q=",
+        "owner": "yaitskov",
+        "repo": "in-browser-cabal-test",
+        "rev": "3638080577c7093a2c329e7b567d095914231db6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "yaitskov",
+        "repo": "in-browser-cabal-test",
+        "type": "github"
+      }
+    },
     "miso": {
       "flake": false,
       "locked": {
@@ -163,6 +183,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "in-browser-cabal-test": "in-browser-cabal-test",
         "miso": "miso",
         "miso-flake": "miso-flake",
         "nixpkgs": "nixpkgs_3"
