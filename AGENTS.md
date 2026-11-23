@@ -10,3 +10,4 @@ regenerate it if template changes.
 ## Wrap lines longer than 85
 - operator (`->` or `::`) at the end of line
 ## Add new imports keeping asc order
+## don't import from root Prelude directly
