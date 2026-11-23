@@ -33,18 +33,28 @@ EOF
     esac
     shift
 done
+function portReady() {
+    timeout 1 bash -c "cat < /dev/null > /dev/tcp/$HOST/$PORT" 2>/dev/null
+}
 function launchBrowserWhenReady() {
     echo "Launch browser once port $PORT is ready"
-    while : ; do
-        timeout 1 bash -c "cat < /dev/null > /dev/tcp/$HOST/$PORT" \
-            && { echo "Port $PORT is Open. Break." ; break ; }
+    portReady || {
         echo "Port $PORT is closed. Wait & Retry"
-        sleep 1
-    done
+        while : ; do
+            portReady && { echo "Port $PORT is Open. Break." ; break ; }
+            echo -n "."
+            sleep 1
+        done
+        echo
+    }
     chromium "http://$HOST:$PORT/main.html" 2>/dev/null
 }
+function browserPids() {
+    ps aux | grep chromium | grep -v "grep chromium" | awk '{print $2}'
+}
+
 if [ $NOBROWSER == "N" ] ; then
-    CHROME_PIDS_BEFORE="$(ps aux |grep chromium | awk '{print $2}')"
+    CHROME_PIDS_BEFORE="$(browserPids)"
     launchBrowserWhenReady &
     trap "kill $!" EXIT
 fi
@@ -56,9 +66,8 @@ echo main | wasm32-wasi-cabal \
 
 if [ $NOBROWSER == "N" ] && [ $KEEP_BROWSER == "N" ] ; then
 
-    CHROME_PIDS_AFTER="$(ps aux |grep chromium | awk '{print $2}')"
+    CHROME_PIDS_AFTER="$(browserPids)"
     CHROME_PIDS_TO_KILL="$(comm -3 <(echo "$CHROME_PIDS_AFTER") <(echo "$CHROME_PIDS_BEFORE"))"
-
-    for cpid in $CHROME_PIDS_TO_KILL ; do kill $cpid ; done
+    for cpid in $CHROME_PIDS_TO_KILL ; do kill $cpid || true; done
     echo Browser tabs are closed
 fi
