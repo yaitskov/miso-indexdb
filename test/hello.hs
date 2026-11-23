@@ -67,15 +67,19 @@ parallelTests :: IO ()
 parallelTests = hspec do
   describe "IndexDb parallel" do
     it "openDb creates db if missing" do
-        property $ \(dbName':: String) ->
-          dbName' /= [] ==> idempotentIOProperty do
+        property $ \(dbName':: String) -> do
+          dbName' /= []  ==> idempotentIOProperty do
             let dbName = ms dbName'
             runCbT do
-              closeDb =<< openDb (dbName)
               f <- factory
-              dbNames <- fmap (\x -> x.name) <$> listDatabaseNames f
-              () <- await =<< deleteDatabase f dbName
-              pure $ dbNames `shouldContain` [dbName]
+              existingDbs <- fmap (\x -> x.name) <$> listDatabaseNames f
+              if dbName `elem` existingDbs then
+                pure $ pendingWith $ "DB name collision " <> dbName'
+              else do
+                closeDb =<< openDb (dbName)
+                dbNames <- fmap (\x -> x.name) <$> listDatabaseNames f
+                () <- await =<< deleteDatabase f dbName
+                pure $ dbNames `shouldContain` [dbName]
 
 main :: IO ()
 main = do

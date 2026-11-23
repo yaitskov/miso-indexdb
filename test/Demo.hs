@@ -1,7 +1,7 @@
 module Demo where
 
 import Miso.IndexDb as IDB
-import Miso.IndexDb.Cb
+
 import UnliftIO (bracket, throwIO)
 
 eventResult :: CbM m => JSVal -> m JSVal
